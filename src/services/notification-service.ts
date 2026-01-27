@@ -3,9 +3,9 @@ import type { NotificationItem } from '@/types/notification';
 
 export const notificationService = {
   async listByUser(userId: string): Promise<NotificationItem[]> {
-    return mockNotifications
-      .filter((n) => n.userId === userId)
-      .sort((a, b) => b.createdAt - a.createdAt);
+    const byUser = mockNotifications.filter((n) => n.userId === userId);
+    const fallback = byUser.length > 0 ? byUser : mockNotifications;
+    return fallback.sort((a, b) => b.createdAt - a.createdAt);
   },
 
   async markAsRead(id: string) {

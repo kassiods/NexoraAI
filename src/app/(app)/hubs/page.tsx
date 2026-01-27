@@ -25,29 +25,32 @@ export default function HubsPage() {
 
   const filtered = hubs.filter((h) => {
     const matchesCategory = category ? h.category === category : true;
-    const matchesTerm = debounced ? h.name.toLowerCase().includes(debounced) || h.description.toLowerCase().includes(debounced) : true;
+    const matchesTerm = debounced
+      ? h.name.toLowerCase().includes(debounced) || h.description.toLowerCase().includes(debounced) || (h.context ?? '').toLowerCase().includes(debounced)
+      : true;
     return matchesCategory && matchesTerm;
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">Explorar</p>
-          <h1 className="text-2xl font-semibold text-white">Hubs</h1>
-          <p className="text-sm text-[#9CA3AF]">Explore hubs por categoria e solicite entrada.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Explorar</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)]">Hubs</h1>
+          <p className="text-sm text-[var(--text-secondary)]">Explore hubs por categoria e solicite entrada.</p>
+          <p className="text-xs text-[var(--text-secondary)]">Aqui estão os espaços onde pessoas trocam feedback, constroem projetos e evoluem juntas.</p>
         </div>
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-          <div className="flex items-center gap-2 rounded-lg border border-[#26262E] bg-[#0F1117] px-3 py-2 text-sm text-[#E5E7EB]">
-            <Search className="h-4 w-4 text-[#9CA3AF]" />
+          <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)]">
+            <Search className="h-4 w-4 text-[var(--text-secondary)]" />
             <input
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               placeholder="Buscar hubs ou descrições"
-              className="w-48 border-none bg-transparent p-0 text-sm text-white placeholder:text-[#6B7280] focus:ring-0"
+              className="w-48 border-none bg-transparent p-0 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:ring-0"
             />
           </div>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="text-sm">
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)]">
             <option value="">Todas categorias</option>
             {categories.map((c) => (
               <option key={c} value={c}>
@@ -57,25 +60,57 @@ export default function HubsPage() {
           </select>
           <Link
             href="/hubs/requests/new"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(109,40,217,0.35)] transition hover:bg-brand-500 hover:scale-[1.01]"
+            className="rounded-lg bg-[var(--action)] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)] hover:scale-[1.01]"
           >
             Solicitar novo hub
           </Link>
         </div>
       </div>
+      <p className="text-xs text-[var(--text-secondary)]">Hubs são comunidades onde você troca feedback, acompanha projetos e cresce junto com outras pessoas.</p>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((hub) => (
-          <Link
-            key={hub.id}
-            href={`/hubs/${hub.id}`}
-            className="rounded-xl border border-white/6 bg-[#16161D] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:scale-[1.01] hover:border-brand-700 hover:bg-[#1C1C25]"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-400">{hub.category}</p>
-            <h2 className="mt-2 text-lg font-semibold text-white">{hub.name}</h2>
-            <p className="mt-2 text-sm text-[#9CA3AF]">{hub.description}</p>
-          </Link>
-        ))}
-        {filtered.length === 0 && <p className="text-sm text-[#9CA3AF]">Nenhum hub encontrado para essa busca.</p>}
+        {filtered.map((hub) => {
+          const statusLabel = hub.status === 'request' ? 'Entrada por solicitação' : 'Aberto';
+          const ctaLabel = hub.status === 'request' ? 'Solicitar participação' : 'Explorar hub';
+          return (
+            <div
+              key={hub.id}
+              className="flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 transition hover:-translate-y-0.5 hover:scale-[1.01] hover:bg-[var(--bg-surface-hover)]"
+            >
+              <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                <p className="font-semibold uppercase tracking-wide">{hub.category}</p>
+                <span className="text-[var(--text-secondary)]">{statusLabel}</span>
+              </div>
+              <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">{hub.name}</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">{hub.description}</p>
+              {hub.context && <p className="mt-2 text-sm text-[var(--text-primary)]">{hub.context}</p>}
+              <div className="mt-4 flex items-center justify-between text-sm text-[var(--text-primary)]">
+                <Link
+                  href={`/hubs/${hub.id}`}
+                  className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
+                >
+                  {ctaLabel}
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-primary)]">
+            <p className="text-base font-semibold text-[var(--text-primary)]">Nenhum hub encontrado</p>
+            <p className="mt-1 text-[var(--text-secondary)]">Você pode ajustar os filtros ou solicitar a criação de um novo hub.</p>
+            <Link
+              href="/hubs/requests/new"
+              className="mt-3 inline-flex rounded-lg bg-[var(--action)] px-4 py-2 text-xs font-semibold text-black transition hover:bg-[var(--action-hover)]"
+            >
+              Solicitar novo hub
+            </Link>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-1 text-xs text-[var(--text-secondary)]">
+        <p>Sua participação em hubs influencia sua visibilidade na comunidade.</p>
       </div>
     </div>
   );

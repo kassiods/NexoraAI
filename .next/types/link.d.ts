@@ -30,17 +30,21 @@ declare namespace __next_route_internal_types__ {
 
   type StaticRoutes = 
     | `/`
+    | `/admin`
     | `/dashboard`
+    | `/admin/reports`
+    | `/admin/hubs`
+    | `/auth/complete-profile`
     | `/hubs`
     | `/hubs/requests/new`
     | `/notifications`
-    | `/profile`
-    | `/auth/complete-profile`
     | `/auth/login`
-    | `/auth/register`
+    | `/profile`
     | `/auth/reset`
+    | `/auth/register`
   type DynamicRoutes<T extends string = string> = 
     | `/hubs/${SafeSlug<T>}`
+    | `/profile/${SafeSlug<T>}`
 
   type RouteImpl<T> = 
     | StaticRoutes

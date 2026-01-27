@@ -7,12 +7,12 @@ export function AuthGateStatus() {
   const { user, loading, signOut } = useAuth();
 
   if (loading) {
-    return <span className="text-slate-500">Carregando...</span>;
+    return <span className="text-[var(--text-secondary)]">Carregando...</span>;
   }
 
   if (!user) {
     return (
-      <Link href="/auth/login" className="rounded-md border border-slate-200 px-3 py-1 text-slate-800">
+      <Link href="/auth/login" className="rounded-md border border-[var(--border)] px-3 py-1 text-[var(--text-primary)]">
         Entrar
       </Link>
     );
@@ -20,10 +20,10 @@ export function AuthGateStatus() {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-slate-700">@{user.username ?? 'usuario'}</span>
+      <span className="text-[var(--text-secondary)]">@{user.username ?? 'usuario'}</span>
       <button
         onClick={signOut}
-        className="rounded-md border border-slate-200 px-3 py-1 text-slate-700 hover:border-brand-200 hover:text-brand-700"
+        className="rounded-md border border-[var(--border)] px-3 py-1 text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--action-hover)]"
       >
         Sair
       </button>

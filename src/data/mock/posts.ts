@@ -24,6 +24,22 @@ export const mockPosts: Post[] = [
     content: 'Validando ideia de app B2B. Busco feedback sobre ICP e pricing inicial.',
     createdAt: Date.now() - 1000 * 60 * 60 * 12,
     likes: []
+  },
+  {
+    id: 'p4',
+    hubId: 'backend',
+    authorId: 'carol',
+    content: 'Alguém já migrou de REST para GraphQL em produção? Curiosa sobre impactos em monitoramento.',
+    createdAt: Date.now() - 1000 * 60 * 50,
+    likes: ['admin', 'mock-user']
+  },
+  {
+    id: 'p5',
+    hubId: 'design',
+    authorId: 'maria',
+    content: 'Estou refinando onboarding mobile. Busco feedback sobre clareza de valor em 3 telas.',
+    createdAt: Date.now() - 1000 * 60 * 220,
+    likes: []
   }
 ];
 
@@ -41,5 +57,19 @@ export const mockComments: Comment[] = [
     authorId: 'mock-user',
     content: 'Tenho usado Workbox light; offline first ficou ok.',
     createdAt: Date.now() - 1000 * 60 * 90
+  },
+  {
+    id: 'c3',
+    postId: 'p4',
+    authorId: 'admin',
+    content: 'Monitore schema changes e erros no gateway; mantenha REST crítico como fallback.',
+    createdAt: Date.now() - 1000 * 60 * 25
+  },
+  {
+    id: 'c4',
+    postId: 'p5',
+    authorId: 'mock-user',
+    content: 'Mostre prova social na segunda tela e reduza campos no formulário inicial.',
+    createdAt: Date.now() - 1000 * 60 * 60 * 5
   }
 ];

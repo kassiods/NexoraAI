@@ -183,26 +183,22 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
-  if (loading) return <p className="text-sm text-[#9CA3AF]">Carregando...</p>;
+  if (loading) return <p className="text-sm text-[var(--text-secondary)]">Carregando...</p>;
   if (!user) return null;
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-400">Conta</p>
-        <h1 className="text-3xl font-bold text-white">Perfil</h1>
-        <p className="text-sm text-[#A4A5B1]">Refine sua identidade e como a comunidade percebe você.</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Conta</p>
+        <h1 className="text-3xl font-bold text-[var(--text-primary)]">Perfil</h1>
+        <p className="text-sm text-[var(--text-secondary)]">Refine sua identidade e como a comunidade percebe você.</p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.05fr_1.6fr]">
-        <section className="relative overflow-hidden rounded-2xl border border-[#26262E] bg-gradient-to-br from-[#1B1328] via-[#13101E] to-[#0B0A14] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
-          <div className="pointer-events-none absolute inset-0 opacity-60" aria-hidden>
-            <div className="absolute -left-10 -top-10 h-36 w-36 rounded-full bg-brand-600 blur-[80px]" />
-            <div className="absolute bottom-0 right-0 h-32 w-32 rounded-full bg-brand-400 blur-[90px]" />
-          </div>
+        <section className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
           <div className="relative flex flex-col items-start gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border border-brand-500/30 bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500 text-2xl font-bold uppercase text-white shadow-[0_20px_50px_rgba(0,0,0,0.45)] ring-4 ring-brand-500/20">
+              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--bg-surface-hover)] text-2xl font-bold uppercase text-[var(--text-primary)] ring-2 ring-[color:rgba(47,51,54,0.6)]">
                 {photoPreview ? (
                   <img
                     src={photoPreview}
@@ -214,22 +210,22 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-[#B6B7C6]">Identidade</p>
-                <h2 className="text-2xl font-semibold text-white leading-tight">{displayName || 'Nome não definido'}</h2>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-[#C8C9D8]">
-                  <span className="rounded-full bg-[#1F1A2A] px-3 py-1 font-semibold text-brand-200 ring-1 ring-brand-500/30">
+                <p className="text-sm font-medium text-[var(--text-secondary)]">Identidade</p>
+                <h2 className="text-2xl font-semibold leading-tight text-[var(--text-primary)]">{displayName || 'Nome não definido'}</h2>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-primary)]">
+                  <span className="rounded-full bg-[var(--bg-surface-hover)] px-3 py-1 font-semibold text-[var(--text-primary)] ring-1 ring-[var(--border)]">
                     {user.username || '@username'}</span>
-                  <span className="text-[#8C8DA0]">Username público • não pode ser alterado</span>
+                  <span className="text-[var(--text-secondary)]">Username público • não pode ser alterado</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[#A4A5B1]">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[var(--text-secondary)]">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-md border border-brand-500/30 px-3 py-1 font-semibold text-brand-100 transition hover:border-brand-400 hover:bg-brand-500/10"
+                    className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1 font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
                   >
                     Alterar foto
                   </button>
-                  <span className="text-[#7D7E8F]">PNG/JPG, até 5MB</span>
+                  <span className="text-[var(--text-secondary)]">PNG/JPG, até 5MB</span>
                 </div>
               </div>
             </div>
@@ -242,50 +238,60 @@ export default function ProfilePage() {
               onChange={(e) => handleAvatarChange(e.target.files?.[0] ?? null)}
             />
 
-            <div className="flex flex-wrap items-center gap-3 text-sm text-[#C8C9D8]">
-              <span className="inline-flex items-center gap-2 rounded-full bg-[#1F1A2A] px-3 py-1 text-brand-100 ring-1 ring-brand-500/40">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface-hover)] px-3 py-1 text-[var(--text-primary)]">
                 <LaptopIcon />
                 <span>{areas[0] ? areas[0] : 'Defina sua área de atuação'}</span>
               </span>
               {areas.slice(1).map((item) => (
-                <span key={item} className="inline-flex items-center gap-2 rounded-full bg-[#1F1A2A] px-3 py-1 text-brand-100 ring-1 ring-brand-500/40">
+                <span key={item} className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1 text-[var(--text-secondary)]">
                   <LaptopIcon />
                   <span>{item}</span>
                 </span>
               ))}
               {profileIsComplete ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#13281F] px-3 py-1 text-emerald-200 ring-1 ring-emerald-500/40">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1 text-[var(--text-primary)]">
+                  <span className="h-2 w-2 rounded-full bg-[var(--action)]" />
                   Perfil completo
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#2B1A1A] px-3 py-1 text-amber-200 ring-1 ring-amber-500/40" title="Preencha nome, username e bio para completar seu perfil">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-1 text-[var(--text-primary)]" title="Preencha nome, username e bio para completar seu perfil">
+                  <span className="h-2 w-2 rounded-full bg-[var(--text-secondary)]" />
                   Perfil incompleto
                 </span>
               )}
             </div>
+            <p className="text-xs text-[var(--text-secondary)]">
+              {profileIsComplete ? 'Seu perfil está pronto para participar e colaborar em hubs.' : 'Complete seu perfil para participar de hubs.'}
+            </p>
 
-            <div className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-[#E2E3EC] backdrop-blur">
-              <p className="font-semibold text-white">Bio</p>
-              <p className="mt-1 text-[#C8C9D8]">{bio || 'Conte à comunidade no que você está trabalhando.'}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-primary)]">
+              <p className="font-semibold text-[var(--text-primary)]">Bio</p>
+              <p className="mt-1 text-[var(--text-secondary)]">{bio || 'No que você está trabalhando agora? Que tipo de feedback você busca?'}</p>
             </div>
 
-            <div className="w-full rounded-xl border border-[#26262E] bg-[#0F0F16]/80 px-4 py-3 text-sm text-[#C8C9D8] backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.12em] text-[#8C8DA0]">Áreas de atuação</p>
+            <div className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 text-sm text-[var(--text-primary)]">
+              <p className="text-xs uppercase tracking-[0.12em] text-[var(--text-secondary)]">Áreas de atuação</p>
               {areas.length === 0 ? (
-                <p className="mt-2 text-[#A4A5B1]">Adicione até 3 áreas para mostrar como você contribui.</p>
+                <p className="mt-2 text-[var(--text-secondary)]">Adicione até 3 áreas para mostrar como você contribui.</p>
               ) : (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {areas.map((item) => (
-                    <span key={item} className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-[#1F1A2A] px-3 py-1 text-brand-50">
+                  {areas.map((item, index) => (
+                    <span
+                      key={item}
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${
+                        index === 0
+                          ? 'border border-[var(--border)] bg-[var(--bg-surface-hover)] text-[var(--text-primary)]'
+                          : 'border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'
+                      }`}
+                    >
                       <LaptopIcon />
                       <span>{item}</span>
                     </span>
                   ))}
                 </div>
               )}
-              <p className="mt-2 text-xs text-[#7D7E8F]">Essas áreas ajudam a comunidade a entender como você pode contribuir.</p>
+              <p className="mt-2 text-xs text-[var(--text-secondary)]">Essas áreas ajudam a comunidade a entender como você pode contribuir.</p>
             </div>
           </div>
         </section>
@@ -330,24 +336,28 @@ export default function ProfilePage() {
                 className="w-full rounded-lg border border-[#242534] bg-[#0D0D14] px-3 py-3 text-sm text-white outline-none transition duration-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-500/40"
                 placeholder={bioPlaceholder}
               />
-              <p className="text-xs text-[#7D7E8F]">Seja específico sobre projetos, pedidos de feedback ou interesses.</p>
+              <p className="text-xs text-[var(--text-secondary)]">No que você está trabalhando agora? Que tipo de feedback você busca?</p>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[#D5D6E2]">Áreas de atuação</label>
               <div className="rounded-xl border border-[#242534] bg-[#0D0D14] px-3 py-2">
                 <div className="flex flex-wrap gap-2 pb-2">
-                  {areas.map((item) => (
+                  {areas.map((item, index) => (
                     <span
                       key={item}
-                      className="group inline-flex items-center gap-1 rounded-full border border-brand-500/30 bg-[#1F1A2A] px-3 py-1 text-xs text-brand-50 transition hover:border-brand-400 hover:bg-[#261C38]"
+                      className={`group inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs transition ${
+                        index === 0
+                          ? 'border border-[var(--border)] bg-[var(--bg-surface-hover)] text-[var(--text-primary)]'
+                          : 'border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'
+                      }`}
                     >
                       <LaptopIcon />
                       <span>{item}</span>
                       <button
                         type="button"
                         onClick={() => removeArea(item)}
-                        className="text-[#9CA3AF] transition hover:text-white"
+                        className="text-[var(--text-secondary)] transition hover:text-[var(--action-hover)]"
                         aria-label={`Remover ${item}`}
                       >
                         ×
@@ -386,14 +396,14 @@ export default function ProfilePage() {
           </div>
 
           <div className="mt-6 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs text-[#7D7E8F]">
-              <span className="h-2 w-2 rounded-full bg-brand-400" />
-              <span>Microinterações: foco roxo suave e transições de 180ms.</span>
+            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+              <span className="h-2 w-2 rounded-full bg-[var(--text-secondary)]" />
+              <span>Microinterações: foco suave e transições de 180ms.</span>
             </div>
             <button
               type="submit"
               disabled={saving || !hasChanges}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-black transition duration-200 hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? (
                 <>
@@ -415,6 +425,12 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
+
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 text-sm text-[var(--text-secondary)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Em breve</p>
+        <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">Contribuições recentes (em breve)</h3>
+        <p className="mt-2 text-[var(--text-secondary)]">Acompanhe suas publicações e feedbacks assim que lançarmos.</p>
+      </section>
 
       <section className="rounded-2xl border border-[#26262E] bg-[#0F0F16] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
         <div className="flex items-center justify-between">
@@ -440,13 +456,13 @@ export default function ProfilePage() {
                   </span>
                   <div>
                     <p className="font-semibold text-white">Você ainda não participa de hubs.</p>
-                    <p className="text-[#8C8DA0]">Encontre comunidades para trocar feedbacks e projetos.</p>
+                    <p className="text-[#8C8DA0]">Encontre um hub para começar, aprender com moderadores e acompanhar discussões em grupo.</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={goToHubs}
-                  className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-500"
+                  className="rounded-lg bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-[#E6E6E6]"
                 >
                   Explorar hubs
                 </button>
