@@ -1,7 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/(auth)/auth/login/page": "app/(auth)/auth/login/page.js",
   "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
-  "/(auth)/auth/complete-profile/page": "app/(auth)/auth/complete-profile/page.js"
+  "/(auth)/auth/complete-profile/page": "app/(auth)/auth/complete-profile/page.js",
+  "/(app)/hubs/page": "app/(app)/hubs/page.js",
+  "/(app)/profile/page": "app/(app)/profile/page.js",
+  "/(app)/hubs/[id]/page": "app/(app)/hubs/[id]/page.js"
 }

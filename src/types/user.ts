@@ -6,6 +6,7 @@ export type UserProfile = {
   photoURL?: string | null;
   bio?: string | null;
   area?: string | null;
+  areas?: string[];
   links?: {
     github?: string;
     linkedin?: string;

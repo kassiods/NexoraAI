@@ -9,6 +9,7 @@ export const mockUsers: Record<string, UserProfile> = {
     photoURL: null,
     bio: 'Admin mock',
     area: 'Produto',
+    areas: ['Produto', 'Estratégia', 'Liderança'],
     hubs: ['web', 'startups'],
     links: { github: 'https://github.com/nexora', linkedin: 'https://linkedin.com' }
   },
@@ -20,6 +21,7 @@ export const mockUsers: Record<string, UserProfile> = {
     photoURL: null,
     bio: 'Usuário exemplo para testes.',
     area: 'Frontend',
+    areas: ['Frontend', 'UI/UX'],
     hubs: ['web', 'design'],
     links: { github: 'https://github.com/mock', linkedin: 'https://linkedin.com' }
   }

@@ -36,7 +36,7 @@ export function SignInForm() {
           type="email"
           className="mt-1"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)
           required
         />
       </div>
