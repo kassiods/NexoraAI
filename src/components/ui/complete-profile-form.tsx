@@ -47,7 +47,7 @@ export function CompleteProfileForm({ user }: { user: UserProfile | null }) {
           </span>
           <input
             type="text"
-            className="w-full rounded-r-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]"
+            className="w-full rounded-r-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--action)] focus:outline-none"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -59,7 +59,7 @@ export function CompleteProfileForm({ user }: { user: UserProfile | null }) {
         <label className="text-sm font-medium text-[var(--text-primary)]">Nome público</label>
         <input
           type="text"
-          className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]"
+          className="mt-1 input-field"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           required
@@ -69,7 +69,7 @@ export function CompleteProfileForm({ user }: { user: UserProfile | null }) {
         <label className="text-sm font-medium text-[var(--text-primary)]">Área de atuação</label>
         <input
           type="text"
-          className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]"
+          className="mt-1 input-field"
           value={area}
           onChange={(e) => setArea(e.target.value)}
         />
@@ -78,7 +78,8 @@ export function CompleteProfileForm({ user }: { user: UserProfile | null }) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-[var(--action)] px-4 py-2 font-semibold text-black transition hover:bg-[var(--action-hover)] disabled:opacity-70"
+        aria-busy={loading}
+        className="btn btn-primary w-full"
       >
         {loading ? 'Salvando...' : 'Salvar e continuar'}
       </button>

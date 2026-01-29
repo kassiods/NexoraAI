@@ -50,7 +50,7 @@ export default function HubsPage() {
               className="w-48 border-none bg-transparent p-0 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:ring-0"
             />
           </div>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)]">
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="input-field max-w-[220px]">
             <option value="">Todas categorias</option>
             {categories.map((c) => (
               <option key={c} value={c}>
@@ -60,7 +60,7 @@ export default function HubsPage() {
           </select>
           <Link
             href="/hubs/requests/new"
-            className="rounded-lg bg-[var(--action)] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)] hover:scale-[1.01]"
+            className="btn btn-primary px-4 py-2 text-sm hover:scale-[1.01]"
           >
             Solicitar novo hub
           </Link>
@@ -75,7 +75,7 @@ export default function HubsPage() {
           return (
             <div
               key={hub.id}
-              className="flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 transition hover:-translate-y-0.5 hover:scale-[1.01] hover:bg-[var(--bg-surface-hover)]"
+              className="flex h-full flex-col rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 transition duration-150 ease-out hover:-translate-y-0.5 hover:scale-[1.01] hover:bg-[var(--bg-surface-hover)]"
             >
               <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
                 <p className="font-semibold uppercase tracking-wide">{hub.category}</p>
@@ -87,7 +87,7 @@ export default function HubsPage() {
               <div className="mt-4 flex items-center justify-between text-sm text-[var(--text-primary)]">
                 <Link
                   href={`/hubs/${hub.id}`}
-                  className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
+                  className="btn btn-secondary px-3 py-2 text-xs"
                 >
                   {ctaLabel}
                 </Link>
@@ -101,7 +101,7 @@ export default function HubsPage() {
             <p className="mt-1 text-[var(--text-secondary)]">Você pode ajustar os filtros ou solicitar a criação de um novo hub.</p>
             <Link
               href="/hubs/requests/new"
-              className="mt-3 inline-flex rounded-lg bg-[var(--action)] px-4 py-2 text-xs font-semibold text-black transition hover:bg-[var(--action-hover)]"
+              className="btn btn-primary mt-3 inline-flex px-4 py-2 text-xs"
             >
               Solicitar novo hub
             </Link>

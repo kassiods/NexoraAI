@@ -51,7 +51,7 @@ export function ActivityCard({ post, authorName, authorSlug, hubName, hubId, cre
               <p className="text-sm font-semibold leading-tight text-[var(--text-primary)]">{authorName}</p>
             )}
             <Link
-              href={{ pathname: '/hubs/[id]', query: { id: hubId } }}
+              href={`/hubs/${hubId}`}
               className="mt-1 inline-flex items-center gap-2 rounded-full bg-[var(--bg-surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)] ring-1 ring-[var(--border)] hover:text-[var(--action)]"
             >
               {hubName}
@@ -60,7 +60,7 @@ export function ActivityCard({ post, authorName, authorSlug, hubName, hubId, cre
         </div>
         <span className="rounded-full bg-[var(--bg-surface-hover)] px-3 py-1 text-[11px] text-[var(--text-secondary)]">{createdLabel}</span>
       </div>
-      <p className="mt-4 text-base leading-relaxed text-[var(--text-primary)]">{post.content}</p>
+      <p className="mt-4 text-base leading-relaxed text-white/90">{post.content}</p>
       <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-semibold text-[var(--text-secondary)]">
         <motion.button
           whileTap={{ scale: 0.92 }}
@@ -103,7 +103,7 @@ export function ActivityCard({ post, authorName, authorSlug, hubName, hubId, cre
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Curti! Conta mais detalhes ou compartilha o repositório."
-            className="min-h-[90px] w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--action)]"
+            className="min-h-[90px] w-full rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-contrast)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--action)]"
           />
           <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
             <span>Envio real chega em breve.</span>

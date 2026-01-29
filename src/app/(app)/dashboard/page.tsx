@@ -110,6 +110,16 @@ export default function DashboardPage() {
   };
 
   const handleLike = (postId: string) => {
+    if (!user) return;
+    setFeed((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        const current = p.likes ?? [];
+        const already = current.includes(user.uid);
+        const nextLikes = already ? current.filter((id) => id !== user.uid) : [...current, user.uid];
+        return { ...p, likes: nextLikes };
+      })
+    );
     setLiked((prev) => ({ ...prev, [postId]: !prev[postId] }));
   };
 
@@ -176,7 +186,7 @@ export default function DashboardPage() {
                     value={composerText}
                     onChange={(e) => setComposerText(e.target.value)}
                     placeholder="No que você está trabalhando hoje?"
-                    className="min-h-[110px] w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-surface-hover)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--action)]"
+                    className="min-h-[110px] w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-surface-hover)] px-4 py-3 text-sm text-[var(--text-contrast)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--action)]"
                   />
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="text-xs text-[var(--text-secondary)]">Esse espaço é o centro social da Nexora.</span>
@@ -210,7 +220,7 @@ export default function DashboardPage() {
               {visiblePosts.map((post) => {
                 const { label, slug } = authorMeta(post.authorId);
                 return (
-                  <ActivityCard
+                    <ActivityCard
                     key={post.id}
                     post={post}
                     authorName={label}

@@ -36,13 +36,13 @@ export function SignUpForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <label className="text-sm font-medium text-[var(--text-primary)]">E-mail</label>
-        <input type="email" className="mt-1" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input type="email" className="mt-1 input-field" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       <div>
         <label className="text-sm font-medium text-[var(--text-primary)]">Senha</label>
         <input
           type="password"
-          className="mt-1"
+          className="mt-1 input-field"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -53,7 +53,8 @@ export function SignUpForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-[var(--action)] px-4 py-2 font-semibold text-black transition hover:bg-[var(--action-hover)] disabled:opacity-70"
+        aria-busy={loading}
+        className="btn btn-primary w-full"
       >
         {loading ? 'Criando...' : 'Criar conta'}
       </button>

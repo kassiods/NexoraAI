@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Nexora icon">
+  <rect width="512" height="512" rx="64" fill="#0a0a0a"/>
+  <rect x="44" y="44" width="424" height="424" rx="52" fill="#16181c" stroke="#2f3336" stroke-width="12"/>
+  <path d="M168 380V132h64l104 156V132h64v248h-64L232 224v156z" fill="#e7e9ea"/>
+</svg>

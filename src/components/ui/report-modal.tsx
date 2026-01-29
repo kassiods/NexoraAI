@@ -32,7 +32,7 @@ export function ReportModal({ open, targetLabel, onCancel, onSubmit, submitting 
           </div>
           <button
             onClick={onCancel}
-            className="rounded-lg px-2 py-1 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--action-hover)]"
+            className="btn btn-ghost rounded-lg px-2 py-1 text-sm text-[var(--text-secondary)]"
           >
             Fechar
           </button>
@@ -53,7 +53,7 @@ export function ReportModal({ open, targetLabel, onCancel, onSubmit, submitting 
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.12)]"
+              className="input-field"
             >
               {commonReasons.map((item) => (
                 <option key={item} value={item}>
@@ -70,7 +70,7 @@ export function ReportModal({ open, targetLabel, onCancel, onSubmit, submitting 
               onChange={(e) => setDetails(e.target.value)}
               rows={4}
               placeholder="Descreva o que aconteceu, links ou contexto adicional."
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.12)]"
+              className="input-field"
             />
           </label>
 
@@ -80,16 +80,17 @@ export function ReportModal({ open, targetLabel, onCancel, onSubmit, submitting 
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
+                className="btn btn-secondary px-3 py-2 text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={disabled}
-                className="rounded-lg bg-[var(--action)] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)] disabled:opacity-60"
+                aria-busy={submitting}
+                className="btn btn-primary px-4 py-2 text-sm"
               >
-                Enviar denúncia
+                {submitting ? 'Enviando...' : 'Enviar denúncia'}
               </button>
             </div>
           </div>

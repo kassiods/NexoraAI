@@ -34,10 +34,16 @@ export default function NewHubRequestPage() {
   const onSubmit = async (data: FormValues) => {
     setError(null);
     setLoading(true);
-    await hubService.requestHub({ ...data, requesterId: user?.uid ?? 'mock-user' });
-    setSent(true);
-    setLoading(false);
-    reset();
+    try {
+      await hubService.requestHub({ ...data, requesterId: user?.uid ?? 'mock-user' });
+      setSent(true);
+      reset();
+    } catch (err) {
+      setError('Não foi possível enviar agora. Tente novamente em instantes.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,8 +64,9 @@ export default function NewHubRequestPage() {
           <label className="text-sm font-medium text-[var(--text-primary)]">Nome do hub</label>
           <input
             {...register('name')}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.12)]"
+            className="input-field"
             placeholder="Ex.: Desenvolvimento Web, Backend Brasil"
+            aria-invalid={!!errors.name}
           />
           {errors.name && <p className="text-xs text-red-300">{errors.name.message}</p>}
         </div>
@@ -68,9 +75,10 @@ export default function NewHubRequestPage() {
           <label className="text-sm font-medium text-[var(--text-primary)]">Descrição</label>
           <textarea
             {...register('description')}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.12)]"
+            className="input-field min-h-[140px]"
             rows={4}
             placeholder="Ex.: Comunidade focada em validação de ideias e MVPs, troca de feedback e encontros quinzenais."
+            aria-invalid={!!errors.description}
           />
           <p className="text-xs text-[var(--text-secondary)]">Uma boa descrição acelera a aprovação e ajuda as pessoas a entenderem o hub.</p>
           {errors.description && <p className="text-xs text-red-300">{errors.description.message}</p>}
@@ -82,7 +90,7 @@ export default function NewHubRequestPage() {
             <select
               value={categoryInput || ''}
               onChange={(e) => setCategoryInput(e.target.value)}
-              className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+              className="input-field"
             >
               <option value="">Selecione uma categoria</option>
               {categories.map((cat) => (
@@ -95,8 +103,9 @@ export default function NewHubRequestPage() {
               {...register('category')}
               value={categoryInput}
               onChange={(e) => setCategoryInput(e.target.value)}
-              className="rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)]"
+              className="input-field"
               placeholder="Ou sugira uma nova categoria"
+              aria-invalid={!!errors.category}
             />
             <p className="text-xs text-[var(--text-secondary)]">Ajuda a organizar os hubs da comunidade.</p>
           </div>
@@ -107,15 +116,15 @@ export default function NewHubRequestPage() {
           <label className="text-sm font-medium text-[var(--text-primary)]">Objetivo (opcional)</label>
           <input
             {...register('objective')}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.12)]"
+            className="input-field"
             placeholder="Ex.: trocar feedback, estudar juntos, construir projetos em grupo"
           />
           <p className="text-xs text-[var(--text-secondary)]">Contexto opcional para moderadores e futuros membros.</p>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
         {sent && (
-          <div className="rounded-lg border border-[color:rgba(16,185,129,0.25)] bg-[color:rgba(16,185,129,0.08)] px-3 py-2 text-sm text-[var(--text-primary)]">
+          <div className="rounded-lg border border-[color:rgba(16,185,129,0.25)] bg-[color:rgba(16,185,129,0.08)] px-3 py-2 text-sm text-[var(--text-primary)]" role="status" aria-live="polite">
             <p className="font-semibold">Solicitação enviada com sucesso.</p>
             <p className="text-[var(--text-secondary)]">Você será notificado quando houver atualização.</p>
           </div>
@@ -124,7 +133,8 @@ export default function NewHubRequestPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface-hover)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface)] disabled:cursor-not-allowed disabled:opacity-60"
+          aria-busy={loading}
+          className="btn btn-primary w-full py-3 text-sm"
         >
           {loading ? 'Enviando...' : 'Enviar solicitação'}
         </button>

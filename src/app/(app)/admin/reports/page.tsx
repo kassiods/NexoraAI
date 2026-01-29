@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import type { Route } from 'next';
 import { useEffect, useMemo, useState } from 'react';
 import { moderationService } from '@/services/moderation-service';
 import type { Report } from '@/types/report';
@@ -146,7 +147,7 @@ export default function AdminReportsPage() {
           const contentAuthorId = comment?.authorId ?? post?.authorId ?? report.reportedUserId;
           const contentAuthor = contentAuthorId ? mockUsers[contentAuthorId] : undefined;
           const contentText = comment?.content ?? post?.content ?? 'Conteúdo não localizado (mock).';
-          const contentLink = hub ? { pathname: '/hubs/[id]', query: { id: hub.id } } : null;
+          const contentLink = hub ? (`/hubs/${hub.id}` as Route) : null;
           const peerReports = report.reportedUserId ? reports.filter((r) => r.reportedUserId === report.reportedUserId) : [];
           const resolvedHistory = peerReports.filter((r) => r.status === 'resolved' && r.resolutionAction);
 
@@ -403,7 +404,7 @@ export default function AdminReportsPage() {
             const contentAuthorId = comment?.authorId ?? post?.authorId ?? report.reportedUserId;
             const contentAuthor = contentAuthorId ? mockUsers[contentAuthorId] : undefined;
             const contentText = comment?.content ?? post?.content ?? 'Conteúdo não localizado (mock).';
-            const contentLink = hub ? { pathname: '/hubs/[id]', query: { id: hub.id } } : null;
+            const contentLink = hub ? (`/hubs/${hub.id}` as Route) : null;
             const peerReports = report.reportedUserId ? reports.filter((r) => r.reportedUserId === report.reportedUserId) : [];
             const resolvedHistory = peerReports.filter((r) => r.status === 'resolved' && r.resolutionAction);
 

@@ -26,7 +26,7 @@ export function ResetPasswordForm() {
         <label className="text-sm font-medium text-[var(--text-primary)]">E-mail</label>
         <input
           type="email"
-          className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-[var(--text-primary)]"
+          className="mt-1 input-field"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -36,7 +36,7 @@ export function ResetPasswordForm() {
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"
-        className="w-full rounded-lg bg-[var(--action)] px-4 py-2 font-semibold text-black transition hover:bg-[var(--action-hover)]"
+        className="btn btn-primary w-full"
       >
         Enviar link
       </button>

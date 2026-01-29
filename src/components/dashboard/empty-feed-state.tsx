@@ -21,10 +21,7 @@ export function EmptyFeedState({ recommended = [] }: Props) {
       </div>
       <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">Ainda está quieto por aqui</h3>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">Explore hubs e siga comunidades para ver o que o pessoal está criando.</p>
-      <Link
-        href="/hubs"
-        className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--action)] px-5 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)]"
-      >
+      <Link href="/hubs" className="btn btn-primary mt-4 inline-flex items-center justify-center gap-2 px-5 py-2 text-sm">
         Explorar Hubs
       </Link>
       {recommended.length > 0 && (

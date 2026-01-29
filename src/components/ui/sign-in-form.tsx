@@ -35,7 +35,7 @@ export function SignInForm() {
         <label className="text-sm font-medium text-[var(--text-primary)]">E-mail</label>
         <input
           type="email"
-          className="mt-1"
+          className="mt-1 input-field"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -45,20 +45,21 @@ export function SignInForm() {
         <label className="text-sm font-medium text-[var(--text-primary)]">Senha</label>
         <input
           type="password"
-          className="mt-1"
+          className="mt-1 input-field"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
       </div>
-      <div className="space-y-1 text-sm">
+      <div className="space-y-1 text-sm" role="status" aria-live="polite">
         {error && <p className="text-red-400">{error}</p>}
-        {!error && <p className="text-[var(--text-secondary)]">Use e-mail mock para testar o fluxo.</p>}
+        {!error && <p className="text-[var(--text-secondary)]">Use um e-mail mock para testar o fluxo.</p>}
       </div>
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-[var(--action)] px-4 py-2 font-semibold text-black transition hover:bg-[var(--action-hover)] disabled:opacity-70"
+        aria-busy={loading}
+        className="btn btn-primary w-full"
       >
         {loading ? 'Entrando...' : 'Entrar'}
       </button>

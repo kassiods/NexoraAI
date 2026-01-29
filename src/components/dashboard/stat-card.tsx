@@ -35,8 +35,8 @@ export function StatCard({ label, value, hint, Icon, tone = 'purple', highlight 
         </div>
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">{label}</p>
-          <p className="text-base font-semibold text-[var(--text-primary)]">{value}</p>
-          <p className="text-xs text-[var(--text-secondary)]">{hint}</p>
+          <p className="text-base font-semibold text-white/90">{value}</p>
+          <p className="text-xs text-white/70">{hint}</p>
           {highlight && (
             <div className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-primary)] ring-1 ring-[var(--border)]">
               <CheckCircle2 className="h-3.5 w-3.5" /> Perfil completo

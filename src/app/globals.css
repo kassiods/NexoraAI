@@ -11,8 +11,15 @@
   --text-primary: #e7e9ea;
   --text-secondary: #71767b;
   --text-disabled: #3e4144;
+  --text-contrast: #f5f7fa;
   --action: #e7e9ea;
   --action-hover: #ffffff;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-soft: 0 14px 40px rgba(0, 0, 0, 0.18);
+  --transition-fast: 150ms;
+  --transition-base: 180ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 body {
@@ -21,15 +28,57 @@ body {
 }
 
 a {
-  @apply text-[var(--action)] transition-colors hover:text-[var(--action-hover)];
+  @apply text-[var(--action)] transition-colors duration-150 ease-out hover:text-[var(--action-hover)];
 }
 
 input,
 textarea,
 select {
-  @apply w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.18)];
+  @apply w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none transition duration-150 ease-out placeholder:text-[var(--text-secondary)] focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.18)];
 }
 
 button:disabled {
   @apply opacity-70 cursor-not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 1px var(--action), 0 0 0 6px rgba(231, 233, 234, 0.16);
+  transition: box-shadow var(--transition-fast) var(--ease-standard), transform var(--transition-fast) var(--ease-standard);
+}
+
+@layer components {
+  .card-surface {
+    @apply rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] shadow-[0_14px_40px_rgba(0,0,0,0.14)];
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] transition duration-150 ease-out focus:border-[var(--action)] focus:ring-2 focus:ring-[color:rgba(231,233,234,0.16)];
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-65;
+  }
+
+  .btn-primary {
+    @apply bg-[var(--action)] text-black hover:bg-[var(--action-hover)] active:scale-[0.99] shadow-[0_10px_30px_rgba(231,233,234,0.16)];
+  }
+
+  .btn-secondary {
+    @apply border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] active:scale-[0.99];
+  }
+
+  .btn-ghost {
+    @apply text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] active:scale-[0.99];
+  }
+}
+
+@layer utilities {
+  .transition-base {
+    transition: all var(--transition-fast) var(--ease-standard);
+  }
+
+  .hover-lift {
+    @apply transition-base hover:-translate-y-0.5;
+  }
 }

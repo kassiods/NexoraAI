@@ -149,12 +149,15 @@ export default function HubPage({ params }: HubPageProps) {
           onChange={(e) => setContent(e.target.value)}
           placeholder="Ex.: Quero feedback sobre arquitetura de API ou dúvidas sobre onboarding de usuários"
         />
-        <div className="flex items-center justify-between gap-3 text-xs text-[var(--text-secondary)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[var(--text-secondary)]">
           {!user && <p>Faça login para postar.</p>}
+          {user && !content.trim() && <p>Escreva algo para liberar o botão.</p>}
           <button
             type="submit"
             disabled={!user || !content.trim()}
-            className="inline-flex items-center gap-2 rounded-lg bg-[var(--action)] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)] disabled:opacity-50 disabled:saturate-0"
+            aria-disabled={!user || !content.trim()}
+            title={!user ? 'Entre para publicar' : !content.trim() ? 'Escreva sua mensagem para publicar' : 'Publicar agora'}
+            className="btn btn-primary px-4 py-2 text-sm disabled:opacity-50 disabled:saturate-0"
           >
             Publicar
           </button>
@@ -214,7 +217,7 @@ export default function HubPage({ params }: HubPageProps) {
                 </button>
               </div>
 
-              <p className="text-sm text-[var(--text-primary)] whitespace-pre-line">{post.content}</p>
+              <p className="text-sm text-white/90 whitespace-pre-line">{post.content}</p>
 
               <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
                 <div className="flex items-center gap-2">
@@ -299,7 +302,7 @@ export default function HubPage({ params }: HubPageProps) {
                           <span className="h-1 w-1 rounded-full bg-[var(--border)]" />
                           <span>{formatRelativeTime(c.createdAt)}</span>
                         </div>
-                        <p className="text-[var(--text-primary)] whitespace-pre-line">{c.content}</p>
+                        <p className="text-white/90 whitespace-pre-line">{c.content}</p>
                         <div className="flex items-center gap-3 text-[11px] text-[var(--text-secondary)]">
                           <motion.button
                             type="button"
