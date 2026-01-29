@@ -1,18 +1,18 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/(app)/admin/page": "app/(app)/admin/page.js",
-  "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
   "/(app)/admin/reports/page": "app/(app)/admin/reports/page.js",
   "/(app)/admin/hubs/page": "app/(app)/admin/hubs/page.js",
+  "/(auth)/auth/login/page": "app/(auth)/auth/login/page.js",
   "/(auth)/auth/complete-profile/page": "app/(auth)/auth/complete-profile/page.js",
-  "/(app)/hubs/page": "app/(app)/hubs/page.js",
+  "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
+  "/(app)/admin/page": "app/(app)/admin/page.js",
+  "/(auth)/auth/reset/page": "app/(auth)/auth/reset/page.js",
+  "/(auth)/auth/register/page": "app/(auth)/auth/register/page.js",
   "/(app)/hubs/[id]/page": "app/(app)/hubs/[id]/page.js",
   "/(app)/hubs/requests/new/page": "app/(app)/hubs/requests/new/page.js",
   "/(app)/notifications/page": "app/(app)/notifications/page.js",
-  "/(auth)/auth/login/page": "app/(auth)/auth/login/page.js",
+  "/(app)/hubs/page": "app/(app)/hubs/page.js",
   "/(app)/profile/[username]/page": "app/(app)/profile/[username]/page.js",
-  "/(app)/profile/page": "app/(app)/profile/page.js",
-  "/(auth)/auth/reset/page": "app/(auth)/auth/reset/page.js",
-  "/(auth)/auth/register/page": "app/(auth)/auth/register/page.js"
+  "/(app)/profile/page": "app/(app)/profile/page.js"
 }

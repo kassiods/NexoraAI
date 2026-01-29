@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ShieldCheck, Sparkles, Compass } from 'lucide-react';
+import { Activity, ShieldCheck, Sparkles, Compass, PenLine } from 'lucide-react';
 import { useRequireProfile } from '@/hooks/use-require-profile';
 import { hubService } from '@/services/hub-service';
 import { postService } from '@/services/post-service';
@@ -28,6 +28,8 @@ export default function DashboardPage() {
   const [reportNotice, setReportNotice] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<string | null>(null);
   const [reporting, setReporting] = useState(false);
+  const [composerText, setComposerText] = useState('');
+  const [composerNotice, setComposerNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -68,27 +70,6 @@ export default function DashboardPage() {
   if (loading) return <p className="text-sm text-[var(--text-secondary)]">Carregando...</p>;
   if (!user) return null;
 
-  const stats = [
-    {
-      label: 'Hubs ativos',
-      value: userHubs.length,
-      hint: 'Participando',
-      icon: '🛰️'
-    },
-    {
-      label: 'Posts no feed',
-      value: feed.length,
-      hint: 'Últimos 10',
-      icon: '⚡'
-    },
-    {
-      label: 'Perfil',
-      value: user.username ? 'Completo' : 'Incompleto',
-      hint: user.username ? 'Pronto para hubs' : 'Falta username',
-      icon: '🛡️'
-    }
-  ];
-
   const hubName = (hubId: string) => allHubs.find((h) => h.id === hubId)?.name ?? hubId;
 
   const authorMeta = (id: string) => {
@@ -97,6 +78,35 @@ export default function DashboardPage() {
     const label = profile.displayName ?? profile.username ?? profile.email ?? id;
     const slug = profile.username ? profile.username.replace('@', '') : undefined;
     return { label, slug };
+  };
+
+  const formatTimeAgo = (dateValue: string | number) => {
+    const date = typeof dateValue === 'string' ? new Date(dateValue) : new Date(dateValue);
+    const diff = Date.now() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes <= 0) return 'agora';
+    if (minutes < 60) return `há ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `há ${hours} h`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `há ${days} dia${days > 1 ? 's' : ''}`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 4) return `há ${weeks} sem`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `há ${months} m`; // aproximação simples
+    const years = Math.floor(days / 365);
+    return `há ${years} a`;
+  };
+
+  const formatCommentCount = (post: Post) => {
+    const base = (post.id.length + post.content.length) % 4;
+    return base;
+  };
+
+  const handleCompose = () => {
+    setComposerNotice('Publicação rápida chega em breve. Enquanto isso, compartilhe nos hubs e peça feedback.');
+    setComposerText('');
+    setTimeout(() => setComposerNotice(null), 2600);
   };
 
   const handleLike = (postId: string) => {
@@ -124,97 +134,144 @@ export default function DashboardPage() {
   const suggestedHubs = allHubs.slice(0, 3);
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Visão geral</p>
+    <div className="space-y-10">
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Início</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-semibold text-[var(--text-primary)]">Dashboard</h1>
-            <p className="text-sm text-[var(--text-secondary)]">Visão geral da sua atividade. Olá, {user.displayName ?? user.email}.</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-[var(--text-primary)]">Início</h1>
+            <p className="text-sm text-[var(--text-secondary)]">Veja o que as pessoas estão construindo hoje. Olá, {user.displayName ?? user.email}.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <Link
               href="/hubs"
               className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--action)] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)]"
             >
-              <Compass className="h-4 w-4" /> Explorar Hubs
+              <Compass className="h-4 w-4" /> Explorar hubs
             </Link>
             <Link
-              href="/profile"
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-2 text-sm text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
+              href="#composer"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
             >
-              Ajustar perfil
+              <PenLine className="h-4 w-4" /> Criar post
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <StatCard label="Hubs ativos" value={userHubs.length} hint="Participando" Icon={Activity} tone="indigo" />
-        <StatCard label="Posts no feed" value={feed.length} hint="Últimos 10" Icon={Sparkles} tone="purple" />
-        <StatCard
-          label="Perfil"
-          value={user.username ? 'Completo' : 'Incompleto'}
-          hint={user.username ? 'Pronto para hubs' : 'Falta username'}
-          Icon={ShieldCheck}
-          tone="teal"
-          highlight={!!user.username}
-        />
-      </div>
-
-      <section className="grid gap-4 xl:grid-cols-12">
-        <div className="xl:col-span-8 space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-[var(--text-primary)]">Feed recente</p>
-              <p className="text-xs text-[var(--text-secondary)]">Posts dos hubs que você segue</p>
+      <section className="grid gap-6 xl:grid-cols-12 xl:items-start">
+        <div className="space-y-4 xl:col-span-8">
+          <div id="composer" className="rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--action)] text-base font-semibold text-black ring-1 ring-[var(--border)]">
+                {(user.displayName ?? user.email ?? 'Você').slice(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-lg font-semibold text-[var(--text-primary)]">Compartilhe progresso com a comunidade</p>
+                  <p className="text-sm text-[var(--text-secondary)]">No que você está trabalhando hoje? Travei em algo? Pede feedback aqui.</p>
+                </div>
+                <div className="space-y-2">
+                  <textarea
+                    value={composerText}
+                    onChange={(e) => setComposerText(e.target.value)}
+                    placeholder="No que você está trabalhando hoje?"
+                    className="min-h-[110px] w-full rounded-2xl border border-[var(--border)] bg-[var(--bg-surface-hover)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--action)]"
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs text-[var(--text-secondary)]">Esse espaço é o centro social da Nexora.</span>
+                    <button
+                      type="button"
+                      onClick={handleCompose}
+                      className="inline-flex items-center gap-2 rounded-full bg-[var(--action)] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)]"
+                    >
+                      Compartilhar progresso
+                    </button>
+                  </div>
+                  {composerNotice && <p className="text-xs text-[var(--text-secondary)]">{composerNotice}</p>}
+                </div>
+              </div>
             </div>
-            <Link href="/hubs" className="text-sm font-semibold text-[var(--action)] hover:text-[var(--action-hover)]">
-              Ver hubs
-            </Link>
           </div>
 
-          <div className="mt-4 space-y-4">
-            {feed.length === 0 && <EmptyFeedState recommended={suggestedHubs} />}
-            {visiblePosts.map((post) => {
-              const { label, slug } = authorMeta(post.authorId);
-              return (
-                <ActivityCard
-                  key={post.id}
-                  post={post}
-                  authorName={label}
-                  authorSlug={slug}
-                  hubName={hubName(post.hubId)}
-                  createdLabel={new Date(post.createdAt).toLocaleDateString()}
-                  liked={!!liked[post.id]}
-                  onLike={handleLike}
-                  onReport={handleReport}
-                />
-              );
-            })}
-            {feed.length > visiblePosts.length && (
-              <button
-                onClick={() => setVisibleFeed((prev) => Math.min(feed.length, prev + 3))}
-                className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
-              >
-                Carregar mais
-              </button>
-            )}
-            {reportNotice && <p className="text-xs text-[var(--text-secondary)]">{reportNotice}</p>}
+          <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-lg font-semibold text-[var(--text-primary)]">O que está rolando nos seus hubs</p>
+                <p className="text-xs text-[var(--text-secondary)]">Novidades das comunidades que você segue</p>
+              </div>
+              <Link href="/hubs" className="text-sm font-semibold text-[var(--action)] hover:text-[var(--action-hover)]">
+                Explorar hubs
+              </Link>
+            </div>
+
+            <div className="mt-2 space-y-5">
+              {feed.length === 0 && <EmptyFeedState recommended={suggestedHubs} />}
+              {visiblePosts.map((post) => {
+                const { label, slug } = authorMeta(post.authorId);
+                return (
+                  <ActivityCard
+                    key={post.id}
+                    post={post}
+                    authorName={label}
+                    authorSlug={slug}
+                    hubName={hubName(post.hubId)}
+                    hubId={post.hubId}
+                    createdLabel={formatTimeAgo(post.createdAt)}
+                    likeCount={post.likes?.length ?? 0}
+                    commentCount={formatCommentCount(post)}
+                    liked={!!liked[post.id]}
+                    onLike={handleLike}
+                    onReport={handleReport}
+                  />
+                );
+              })}
+              {feed.length > visiblePosts.length && (
+                <button
+                  onClick={() => setVisibleFeed((prev) => Math.min(feed.length, prev + 3))}
+                  className="w-full rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
+                >
+                  Ver mais posts
+                </button>
+              )}
+              {reportNotice && <p className="text-xs text-[var(--text-secondary)]">{reportNotice}</p>}
+            </div>
           </div>
         </div>
 
-        <div className="xl:col-span-4 space-y-4">
+        <aside className="space-y-4 xl:col-span-4">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">Hubs em que você está</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Seu contexto</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              <Link href="/hubs" className="transition hover:-translate-y-0.5">
+                <StatCard label="Comunidades" value={userHubs.length ? `${userHubs.length} hubs ativos` : 'Entre em um hub'} hint="Onde você troca ideias" Icon={Activity} tone="indigo" />
+              </Link>
+              <Link href="/profile" className="transition hover:-translate-y-0.5">
+                <StatCard label="Suas contribuições" value={feed.length ? `${feed.length} posts recentes` : 'Comece a compartilhar'} hint="Tudo o que você publica" Icon={Sparkles} tone="purple" />
+              </Link>
+              <Link href="/profile" className="transition hover:-translate-y-0.5">
+                <StatCard
+                  label="Seu perfil"
+                  value={user.username ? 'Pronto para conexões' : 'Adicione um username'}
+                  hint={user.username ? 'As pessoas te encontram fácil' : 'Fica mais fácil te marcar'}
+                  Icon={ShieldCheck}
+                  tone="teal"
+                  highlight={!!user.username}
+                />
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Comunidades que você participa</p>
             <div className="mt-3 space-y-3">
-              {userHubs.length === 0 && <p className="text-sm text-[var(--text-secondary)]">Ainda não participa de hubs.</p>}
+              {userHubs.length === 0 && <p className="text-sm text-[var(--text-secondary)]">Ainda está quieto por aqui. Explore hubs para começar.</p>}
               {userHubs.map((hub) => (
                 <HubMiniCard key={hub.id} hub={hub} />
               ))}
             </div>
           </div>
-        </div>
+        </aside>
       </section>
 
       <ReportModal

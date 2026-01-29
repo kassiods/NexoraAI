@@ -19,10 +19,8 @@ export function EmptyFeedState({ recommended = [] }: Props) {
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--bg-surface-hover)] text-[var(--action)] ring-1 ring-[var(--border)]">
         <Compass className="h-7 w-7" />
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">Feed vazio por enquanto</h3>
-      <p className="mt-2 text-sm text-[var(--text-secondary)]">
-        Explore hubs ativos para ver publicações, trocar feedback e acompanhar novidades.
-      </p>
+      <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">Ainda está quieto por aqui</h3>
+      <p className="mt-2 text-sm text-[var(--text-secondary)]">Explore hubs e siga comunidades para ver o que o pessoal está criando.</p>
       <Link
         href="/hubs"
         className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--action)] px-5 py-2 text-sm font-semibold text-black transition hover:bg-[var(--action-hover)]"

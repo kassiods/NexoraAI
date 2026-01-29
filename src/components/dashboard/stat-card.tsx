@@ -14,9 +14,9 @@ export type StatCardProps = {
 };
 
 const toneStyles: Record<NonNullable<StatCardProps['tone']>, { bg: string; ring: string; text: string }> = {
-  purple: { bg: 'bg-[color:rgba(255,255,255,0.04)]', ring: 'ring-[color:rgba(47,51,54,0.9)]', text: 'text-[var(--text-primary)]' },
-  indigo: { bg: 'bg-[color:rgba(255,255,255,0.04)]', ring: 'ring-[color:rgba(47,51,54,0.9)]', text: 'text-[var(--text-primary)]' },
-  teal: { bg: 'bg-[color:rgba(255,255,255,0.04)]', ring: 'ring-[color:rgba(47,51,54,0.9)]', text: 'text-[var(--text-primary)]' }
+  purple: { bg: 'bg-[color:rgba(231,233,234,0.06)]', ring: 'ring-[color:rgba(63,65,68,0.9)]', text: 'text-[var(--text-primary)]' },
+  indigo: { bg: 'bg-[color:rgba(231,233,234,0.06)]', ring: 'ring-[color:rgba(63,65,68,0.9)]', text: 'text-[var(--text-primary)]' },
+  teal: { bg: 'bg-[color:rgba(231,233,234,0.06)]', ring: 'ring-[color:rgba(63,65,68,0.9)]', text: 'text-[var(--text-primary)]' }
 };
 
 export function StatCard({ label, value, hint, Icon, tone = 'purple', highlight }: StatCardProps) {
@@ -27,23 +27,23 @@ export function StatCard({ label, value, hint, Icon, tone = 'purple', highlight 
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -4, scale: 1.01, transition: { duration: 0.18 } }}
       transition={{ duration: 0.25 }}
-      className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5"
+      className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-4"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-4xl font-semibold leading-tight text-[var(--action-hover)]">{value}</p>
-          <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
-          <p className="text-xs text-[var(--text-secondary)]">{hint}</p>
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${toneCfg.bg} text-base ${toneCfg.text} ring-1 ${toneCfg.ring}`}>
+          <Icon className="h-4 w-4" />
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${toneCfg.bg} text-lg ${toneCfg.text} ring-1 ${toneCfg.ring}`}>
-          <Icon className="h-5 w-5" />
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">{label}</p>
+          <p className="text-base font-semibold text-[var(--text-primary)]">{value}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{hint}</p>
+          {highlight && (
+            <div className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-surface-hover)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-primary)] ring-1 ring-[var(--border)]">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Perfil completo
+            </div>
+          )}
         </div>
       </div>
-      {highlight && (
-        <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface-hover)] px-3 py-1 text-xs font-semibold text-[var(--text-primary)]">
-          <CheckCircle2 className="h-4 w-4" /> Perfil completo
-        </div>
-      )}
     </motion.div>
   );
 }
