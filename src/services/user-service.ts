@@ -1,8 +1,26 @@
+import type { User } from '@supabase/supabase-js';
 import { mockUsers as baseMockUsers } from '@/data/mock/users';
+import { getSupabaseClient } from '@/lib/supabase-client';
 import type { UserProfile } from '@/types/user';
 
 const LS_KEY = 'nexora_mock_user';
 const LS_USERS_KEY = 'nexora_mock_users';
+
+const supabase = getSupabaseClient();
+
+type ProfileRow = {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  role?: 'admin' | 'user' | null;
+  photo_url?: string | null;
+  bio?: string | null;
+  area?: string | null;
+  areas?: string[] | null;
+  links?: Record<string, string> | null;
+  hubs?: string[] | null;
+  email?: string | null;
+};
 
 const persistUid = (uid: string | null) => {
   if (typeof window === 'undefined') return;
@@ -32,47 +50,171 @@ const saveUsers = (users: Record<string, UserProfile>) => {
   window.localStorage.setItem(LS_USERS_KEY, JSON.stringify(users));
 };
 
+const mapProfile = (user: User | null, profile?: ProfileRow | null): UserProfile | null => {
+  if (!user) return null;
+  return {
+    uid: user.id,
+    email: user.email ?? profile?.email ?? '',
+    username: profile?.username ?? null,
+    displayName: profile?.display_name ?? null,
+    role: (profile?.role as UserProfile['role']) ?? 'user',
+    photoURL: profile?.photo_url ?? null,
+    bio: profile?.bio ?? null,
+    area: profile?.area ?? null,
+    areas: profile?.areas ?? undefined,
+    links: profile?.links ?? undefined,
+    hubs: profile?.hubs ?? undefined
+  };
+};
+
 export const userService = {
   async getCurrentUser(): Promise<UserProfile | null> {
-    const users = loadUsers();
-    const uid = loadUid();
-    if (!uid) return null;
-    return users[uid] ?? null;
+    if (!supabase) {
+      const users = loadUsers();
+      const uid = loadUid();
+      if (!uid) return null;
+      return users[uid] ?? null;
+    }
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      const authed = data.user;
+      if (!authed) return null;
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authed.id)
+        .maybeSingle();
+
+      if (profileError && profileError.code !== 'PGRST116') throw profileError;
+      return mapProfile(authed, profile);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return null; // ignora abortos de navegação/hot reload
+      throw err;
+    }
   },
 
   async signIn(email: string, _password: string): Promise<UserProfile> {
-    const users = loadUsers();
-    const found = Object.values(users).find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      persistUid(found.uid);
-      return found;
+    if (!supabase) {
+      const users = loadUsers();
+      const found = Object.values(users).find((u) => u.email.toLowerCase() === email.toLowerCase());
+      if (found) {
+        persistUid(found.uid);
+        return found;
+      }
+      const uid = `user-${Date.now()}`;
+      const newUser: UserProfile = { uid, email, username: null, displayName: null };
+      users[uid] = newUser;
+      saveUsers(users);
+      persistUid(uid);
+      return newUser;
     }
-    const uid = `user-${Date.now()}`;
-    const newUser: UserProfile = { uid, email, username: null, displayName: null };
-    users[uid] = newUser;
-    saveUsers(users);
-    persistUid(uid);
-    return newUser;
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: _password });
+    if (error) throw error;
+    return mapProfile(data.user, null)!;
   },
 
-  async signUp(email: string, _password: string): Promise<UserProfile> {
-    return this.signIn(email, _password);
+  async signUp(email: string, _password: string, redirectTo?: string): Promise<UserProfile> {
+    if (!supabase) {
+      return this.signIn(email, _password);
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: _password,
+      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined
+    });
+    if (error) throw error;
+
+    const user = data.user;
+    if (user?.id) {
+      await supabase.from('profiles').upsert({ id: user.id, email });
+      // Notificação de boas-vindas
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        kind: 'system',
+        title: 'Bem-vindo à NexoraAI',
+        body: 'Obrigado por se juntar! Complete seu perfil em Perfil para começar a interagir.',
+        read: false
+      });
+    }
+
+    return mapProfile(user, null)!;
   },
 
   async signOut() {
-    persistUid(null);
+    if (!supabase) {
+      persistUid(null);
+      return;
+    }
+    await supabase.auth.signOut();
   },
 
   async updateProfile(profile: UserProfile) {
-    const users = loadUsers();
-    users[profile.uid] = { ...users[profile.uid], ...profile };
-    saveUsers(users);
-    persistUid(profile.uid);
-    return users[profile.uid];
+    if (!supabase) {
+      const users = loadUsers();
+      users[profile.uid] = { ...users[profile.uid], ...profile };
+      saveUsers(users);
+      persistUid(profile.uid);
+      return users[profile.uid];
+    }
+
+    const payload = {
+      id: profile.uid,
+      username: profile.username,
+      display_name: profile.displayName,
+      bio: profile.bio,
+      area: profile.area,
+      areas: profile.areas ?? null,
+      links: profile.links ?? null,
+      photo_url: profile.photoURL ?? null,
+      role: profile.role ?? 'user',
+      hubs: profile.hubs ?? null,
+      email: profile.email
+    } satisfies Partial<ProfileRow> & { id: string };
+
+    const { data, error } = await supabase.from('profiles').upsert(payload).select().maybeSingle();
+    if (error) throw error;
+
+    return {
+      uid: profile.uid,
+      email: profile.email,
+      username: data?.username ?? profile.username ?? null,
+      displayName: data?.display_name ?? profile.displayName ?? null,
+      role: (data?.role as UserProfile['role']) ?? profile.role,
+      photoURL: data?.photo_url ?? profile.photoURL ?? null,
+      bio: data?.bio ?? profile.bio ?? null,
+      area: data?.area ?? profile.area ?? null,
+      areas: (data?.areas as string[] | null) ?? profile.areas,
+      links: (data?.links as UserProfile['links']) ?? profile.links,
+      hubs: (data?.hubs as string[] | null) ?? profile.hubs
+    } satisfies UserProfile;
   },
 
   async getById(uid: string) {
-    const users = loadUsers();
-    return users[uid] ?? null;
+    if (!supabase) {
+      const users = loadUsers();
+      return users[uid] ?? null;
+    }
+
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+
+    return {
+      uid: data.id,
+      email: data.email ?? '',
+      username: data.username ?? null,
+      displayName: data.display_name ?? null,
+      role: (data.role as UserProfile['role']) ?? 'user',
+      photoURL: data.photo_url ?? null,
+      bio: data.bio ?? null,
+      area: data.area ?? null,
+      areas: (data.areas as string[] | null) ?? undefined,
+      links: (data.links as UserProfile['links']) ?? undefined,
+      hubs: data.hubs ?? undefined
+    } satisfies UserProfile;
   }
 };

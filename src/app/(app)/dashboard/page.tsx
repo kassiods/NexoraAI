@@ -173,9 +173,17 @@ export default function DashboardPage() {
         <div className="space-y-4 xl:col-span-8">
           <div id="composer" className="rounded-3xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.18)]">
             <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--action)] text-base font-semibold text-black ring-1 ring-[var(--border)]">
-                {(user.displayName ?? user.email ?? 'Você').slice(0, 2).toUpperCase()}
-              </div>
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName ?? user.email ?? 'Avatar'}
+                  className="h-12 w-12 rounded-full object-cover ring-1 ring-[var(--border)]"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--action)] text-base font-semibold text-black ring-1 ring-[var(--border)]">
+                  {(user.displayName ?? user.email ?? 'Você').slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div className="flex-1 space-y-3">
                 <div className="space-y-1">
                   <p className="text-lg font-semibold text-[var(--text-primary)]">Compartilhe progresso com a comunidade</p>

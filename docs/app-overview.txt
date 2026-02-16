@@ -1,0 +1,190 @@
+Nexora - visão geral da aplicação (fev/2026)
+=================================================
+
+Público e proposta
+- Comunidade focada em hubs de conhecimento, feedback rápido e networking.
+- Experiência dark theme com PWA (manifest e sw.js).
+
+Arquitetura (Next.js 14 / App Router)
+- Pastas: src/app/(auth) para fluxos públicos; src/app/(app) para áreas logadas; src/app/(app)/admin para painel admin.
+- Componentes compartilhados em src/components (dashboard, layout, ui).
+- Dados e serviços mockados em src/data/mock/* e src/services/* (Firebase/Firestore simulados por mock-backend).
+- Tailwind para UI; tokens de cor/raio/sombra em src/app/globals.css.
+
+Autenticação e perfil
+- Hooks: use-auth, use-require-profile garantem usuário carregado e perfil completo.
+- Fluxos: login, registro, reset de senha (mock), completar perfil (username fixo com @, displayName, área).
+- AuthGateStatus mostra login/sair no topo quando usado.
+
+Shell e navegação
+- AppShell: sidebar + mobile nav com links Inicio, Hubs, Notificações, Perfil (Admin aparece se role=admin).
+- Mobile: menu inferior fixo; backdrop ao abrir drawer.
+
+Tela Inicio / Dashboard (src/app/(app)/dashboard)
+- Composer (placeholder) para compartilhar progresso (mensagem mockada).
+- Feed com ActivityCard: mostra autor, hub, tempo, conteúdo, likes com contador, comentar toggle, denunciar.
+- Likes: estado local por post; contador refletindo array de likes de cada post.
+- EmptyFeedState sugere hubs quando feed vazio.
+- Cards "Seu contexto" usam StatCard (hubs do usuário, posts recentes, status do perfil).
+
+Hubs
+- Listagem (src/app/(app)/hubs): filtro por categoria, busca com debounce, CTA "Solicitar novo hub". Cards de hub mostram categoria, status (aberto/por solicitação) e CTA.
+- Detalhe do hub (src/app/(app)/hubs/[id]):
+  - Postar no feed do hub (texto livre). Novo post já grava like do autor e contador inicia em 1.
+  - Posts listam autor, tempo relativo, conteúdo em branco alto contraste, like com contador, comentar, denunciar.
+  - Comentários por post: input inline, lista com autor, tempo, conteúdo; likes de comentário têm contador local.
+  - ReportModal usado para denúncias.
+  - Paginação simples via "Carregar mais".
+- Solicitar hub (src/app/(app)/hubs/requests/new): formulário com validação Zod (nome, descrição, categoria, objetivo opcional). Envia mock para hubService, mostra sucesso/erro amigável.
+
+Notificações
+- Página src/app/(app)/notifications/page.tsx (mock data) lista notificações com filtros básicos (ler/não lida) e CTA para hubs/perfil.
+
+Perfil
+- Página src/app/(app)/profile e /profile/[username]: mostra dados mock, estatísticas, badges; CTAs de editar (mock) e copiar perfil.
+
+Admin
+- src/app/(app)/admin: atalho.
+- src/app/(app)/admin/reports: painel de moderação.
+  - Lista denúncias pendentes e resolvidas (mockServices: moderationService, mockPosts/comments/hubs/users).
+  - Para pendentes: selecionar ação (nenhuma, restrição temporária de posts/comentários, banimento). Valida nota/duração. Confirmação via window.confirm. Atualiza status no estado local.
+  - Mostra contexto: conteúdo, autor, hub (link tipado), histórico mock do usuário.
+
+Serviços mock
+- postService: lista feed por hubs, cria post, addComment. Likes são arrays de user IDs no Post.
+- hubService: lista hubs, categorias, solicita hubs.
+- moderationService: recebe reportContent, resolveReport (mock).
+- userService: signIn/signUp/updateProfile (mock backend), getById.
+
+UI e microinterações
+- Buttons/input utilitários em globals.css (.btn, .input-field, .transition-base, .hover-lift). Focus-visible com halo.
+- Transições 150–180ms, easing padrão.
+- Textos de estado (erros/sucessos) são curtos e não técnicos.
+- Cores: base/surface escuros, texto primário/secondary, action clara; text-contrast e usos white/90 para conteúdo.
+
+PWA
+- manifest.json aponta para /icons/icon-192.svg e /icons/icon-512.svg.
+- sw.js e workbox já presentes; next-pwa registra SW.
+
+Acessibilidade
+- aria-busy em botões de submit; aria-live em mensagens de status; aria-current em navegação.
+
+Pontos de atenção
+- Dados são mocks (não há persistência real).
+- Likes/comentários funcionam no estado do cliente; recarregar perde estado.
+- Composer do dashboard é placeholder (não cria post).
+
+Principais fluxos resumidos
+1) Entrar/Registrar → se novo, completar perfil → redireciona para Inicio.
+2) Inicio: ver feed dos hubs do usuário; curtir/denunciar; seguir para hubs.
+3) Hubs: descobrir filtros; abrir hub; postar/curtir/comentar/denunciar; carregar mais.
+4) Solicitar hub: envia pedido e mostra confirmação.
+5) Admin: revisar denúncias, aplicar ação e marcar como resolvida.
+
+Estrutura de pastas relevante
+- src/app/(auth): layout, login, register, reset, complete-profile.
+- src/app/(app): dashboard, hubs, notifications, profile, admin (+subrotas reports/hubs).
+- src/components: dashboard/* (cards, empty state), layout/app-shell, ui/* (forms, modais, auth gate).
+- src/data/mock: hubs, posts, notifications, reports, users.
+- src/services: hub-service, post-service, notification-service, moderation-service, user-service.
+- public: manifest, sw.js, icons svg.
+
+Inventário detalhado (arquivos e funções principais)
+- src/app/middleware.ts: middleware desativado (matcher vazio); comentário indica futura proteção de /dashboard e /hubs com tokens.
+- src/app/globals.css: tokens de cor/raio/sombra; utilitários .btn, .input-field, focus halo; transições; text contrast.
+- src/app/layout.tsx: layout raiz Next (wrap geral, fonte global).
+
+Rotas (auth)
+- src/app/(auth)/layout.tsx: layout de autenticação (hero com tagline branca, cards com bg escuro).
+- src/app/(auth)/auth/login/page.tsx: página de login consumindo SignInForm.
+- src/app/(auth)/auth/register/page.tsx: cadastro com SignUpForm.
+- src/app/(auth)/auth/reset/page.tsx: reset de senha mock com ResetPasswordForm.
+- src/app/(auth)/auth/complete-profile/page.tsx: completa perfil usando CompleteProfileForm.
+
+Rotas (app/logadas)
+- src/app/(app)/layout.tsx: aplica AppShell para rotas logadas.
+- src/app/(app)/dashboard/page.tsx: página Inicio com composer mock, feed (ActivityCard), likes com contador, EmptyFeedState, StatCards "Seu contexto".
+- src/app/(app)/hubs/page.tsx: listagem de hubs (busca, filtro categoria, CTA solicitar hub).
+- src/app/(app)/hubs/[id]/page.tsx: detalhe do hub; postar, curtir, comentar com contadores; denunciar; carregar mais.
+- src/app/(app)/hubs/requests/new/page.tsx: formulário Zod para solicitar hub; sucesso/erro amigáveis.
+- src/app/(app)/notifications/page.tsx: lista notificações mock (ler/não lida).
+- src/app/(app)/profile/page.tsx: perfil próprio (mock, CTAs de edição/cópia).
+- src/app/(app)/profile/[username]/page.tsx: perfil público por username.
+- src/app/(app)/admin/page.tsx: atalho admin.
+- src/app/(app)/admin/reports/page.tsx: painel moderação; ações (nenhuma, restrição posts/comentários com dias, banimento); validações; confirmação; estado local; links tipados para hubs/perfis; mostra contexto e histórico mock.
+- src/app/(app)/admin/hubs/page.tsx: (mock) visão de hubs para admin.
+- src/app/(app)/admin/reports/page.tsx: (já descrito acima, único painel crítico).
+
+Componentes (dashboard)
+- ActivityCard: exibe post no feed, like com contador, comentar toggle, denunciar; mostra hub/autor/tempo.
+- StatCard: card de métrica com tom (purple/indigo/teal), hint, badge opcional.
+- HubMiniCard: mini card de hub com CTA "Ver".
+- EmptyFeedState: estado vazio com CTA "Explorar Hubs" e sugestões.
+- ActivityCard usa motion para hover, coração animado; contador de likes opcional.
+
+Componentes (layout/ui)
+- layout/AppShell: sidebar + mobile nav; links Inicio/Hubs/Notificações/Perfil/Admin; sign out; avatar iniciais.
+- ui/auth-gate-status: mostra login ou sair conforme estado de auth.
+- ui/sign-in-form: email/senha, loading, erro amigável, redirect.
+- ui/sign-up-form: cria conta mock, redireciona para complete-profile.
+- ui/complete-profile-form: username fixo com @, displayName, área; valida min; redireciona para dashboard.
+- ui/reset-password-form: mock envia email; estados sent/erro.
+- ui/report-modal: modal de denúncia com motivo e detalhes; CTA cancelar/enviar (loading opcional).
+- ui/complete-profile-form, sign-in/up/reset usam classes utilitárias (.input-field, .btn).
+
+Hooks
+- hooks/use-auth.ts: estado de usuário mock (signIn, signUp, signOut, updateProfile via userService).
+- hooks/use-require-profile.ts: redireciona se não logado ou perfil incompleto (usa router).
+
+Serviços (src/services)
+- hub-service.ts: listHubs, listCategories, getHub, getUserHubs, requestHub (mock-backend).
+- post-service.ts: listByHub, listFeedForUser, createPost, addComment (usa mockPosts/mockComments).
+- notification-service.ts: list notifications mock.
+- moderation-service.ts: reportContent, resolveReport, listReports (mock data).
+- user-service.ts: signIn, signUp, updateProfile, getById (mock users backend).
+
+Mock data (src/data/mock)
+- hubs.ts, hub-requests.ts: hubs e solicitações mock.
+- posts.ts, comments em mock-backend: posts com likes iniciais; comentários.
+- notifications.ts: notificações mock.
+- reports.ts: denúncias mock.
+- users.ts: perfis mock (displayName, username, email, role).
+- mock-backend.ts (em src/lib): fonte central de dados mock (hubs, posts, users, requests, notifications, reports) e utilidades.
+
+Lib
+- lib/firebase.ts: inicialização mock de firebase (placeholder).
+- lib/firestore.ts: simulação de firestore (placeholder/mocks).
+- lib/mock-backend.ts: armazena dados em memória para serviços; arrays de hubs, posts, likes, comentários etc.
+
+Tipos
+- types/hub.ts: definição de Hub (id, name, description, category, status, context, members, etc.).
+- types/post.ts: Post {id, hubId, authorId, content, createdAt, likes}; Comment {id, postId, authorId, content, createdAt}.
+- types/notification.ts: Notification {id, title, description, createdAt, type, read, link?}.
+- types/report.ts: Report {id, summary, reason, targetType, targetId, reporterId, ...}.
+- types/user.ts: UserProfile (uid, email, displayName, username, area, hubs, role, onboarded, photoURL?).
+
+Outros arquivos relevantes
+- public/manifest.json: PWA; ícones SVG 192/512; tema #2d5ff0; start_url '/'; display standalone.
+- public/sw.js, public/workbox-*.js: service worker gerado para PWA.
+- public/icons/icon-192.svg, icon-512.svg: logomarca em fundo dark.
+- next.config.mjs: config Next + next-pwa (experimento typedRoutes).
+- tailwind.config.ts: paleta custom neutral/brand, paths de conteúdo.
+- tsconfig.json: paths e settings TS.
+- package.json: scripts (dev, build, lint), dependências Next 14, next-pwa, tailwind, framer-motion, lucide-react, zod, react-hook-form, etc.
+- README.md: instruções base (não detalhado aqui).
+
+Fluxos de interação (detalhe)
+- Login: SignInForm -> userService.signIn -> redirect /dashboard (ou redirect query). Erro amigável.
+- Registro: SignUpForm -> userService.signUp -> updateProfile (username/displayName null) -> /auth/complete-profile.
+- Completar perfil: grava username/displayName/area -> /dashboard.
+- Dashboard feed: ActivityCard recebe post.likes; onLike atualiza estado local de liked; contador exibe length. Comentar toggle (draft local, não publica real). Denunciar abre ReportModal (reportTarget em dashboard state).
+- Hubs detalhe: postService.listByHub carrega posts/comments; likes de post com contador; comentários têm contador separado; postar cria post e já registra like do autor; denunciar seta reportTarget e envia via moderationService.reportContent.
+- Solicitar hub: validação Zod; envia requestHub; mostra alerta sucesso/erro; mantêm category input dual (select + custom).
+- Admin reports: carrega moderationService.listReports; permite marcar ação (none/moderate-comments/moderate-posts/severe-ban), validar nota/dias, confirmar; resolveReport atualiza estado; mostra contexto do conteúdo e links para hub/perfil.
+- Notificações: lista mock notifications; filtros básicos (ler/não lida) no componente (simples).
+- Perfil: apresenta dados mock; CTAs placeholders (copiar, editar). Perfil público lê por username.
+
+Limitações conhecidas
+- Persistência inexistente: tudo em memória mock-backend; recarregar perde likes/comentários novos.
+- Composer da home não publica posts (mensagem informativa).
+- Middleware desativado: rotas não exigem auth real.

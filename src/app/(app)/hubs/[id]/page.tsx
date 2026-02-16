@@ -28,6 +28,7 @@ export default function HubPage({ params }: HubPageProps) {
   const [visiblePosts, setVisiblePosts] = useState(4);
   const [postLikes, setPostLikes] = useState<Record<string, boolean>>({});
   const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({});
+  const [commentLikeCounts, setCommentLikeCounts] = useState<Record<string, number>>({});
   const [reportTarget, setReportTarget] = useState<{ id: string; type: 'post' | 'comment'; label: string } | null>(null);
   const [reporting, setReporting] = useState(false);
   const [reportNotice, setReportNotice] = useState<string | null>(null);
@@ -66,14 +67,27 @@ export default function HubPage({ params }: HubPageProps) {
     postService.listByHub(id).then((data) => {
       setPosts(data.posts);
       setComments(data.comments);
+      // seed comment like counters with zero for consistency
+      const initialCounts: Record<string, number> = {};
+      data.comments.forEach((c) => {
+        initialCounts[c.id] = initialCounts[c.id] ?? 0;
+      });
+      setCommentLikeCounts(initialCounts);
+      const initialPostLikes: Record<string, boolean> = {};
+      data.posts.forEach((p) => {
+        initialPostLikes[p.id] = !!p.likes?.includes(user?.uid ?? '');
+      });
+      setPostLikes(initialPostLikes);
     });
-  }, [id]);
+  }, [id, user?.uid]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !content.trim()) return;
     const created = await postService.createPost(id, user.uid, content.trim());
-    setPosts((prev) => [created, ...prev]);
+    const createdWithLike = { ...created, likes: [...(created.likes ?? []), user.uid] };
+    setPosts((prev) => [createdWithLike, ...prev]);
+    setPostLikes((prev) => ({ ...prev, [created.id]: true }));
     setContent('');
   };
 
@@ -176,7 +190,20 @@ export default function HubPage({ params }: HubPageProps) {
           const author = resolveUser(post.authorId);
           const profileHref = `/profile/${author.username.replace('@', '')}` as unknown as Route;
           const likedPost = !!postLikes[post.id];
-          const togglePostLike = () => setPostLikes((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
+          const likeCount = post.likes?.length ?? 0;
+          const togglePostLike = () => {
+            if (!user) return;
+            setPostLikes((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
+            setPosts((prev) =>
+              prev.map((p) => {
+                if (p.id !== post.id) return p;
+                const current = p.likes ?? [];
+                const already = current.includes(user.uid);
+                const nextLikes = already ? current.filter((uid) => uid !== user.uid) : [...current, user.uid];
+                return { ...p, likes: nextLikes };
+              })
+            );
+          };
           return (
             <article
               key={post.id}
@@ -231,6 +258,7 @@ export default function HubPage({ params }: HubPageProps) {
                   >
                     <Heart className={`h-4 w-4 ${likedPost ? 'fill-[var(--action)] text-[var(--action)]' : ''}`} />
                     <span>{likedPost ? 'Curtido' : 'Curtir'}</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{likeCount}</span>
                   </motion.button>
                   <button
                     className="rounded-full border border-[var(--border)] px-3 py-1 transition hover:bg-[var(--bg-surface-hover)] hover:text-[var(--action-hover)]"
@@ -275,8 +303,10 @@ export default function HubPage({ params }: HubPageProps) {
                   const commentAuthor = resolveUser(c.authorId);
                   const commentProfileHref = `/profile/${commentAuthor.username.replace('@', '')}` as unknown as Route;
                   const liked = !!commentLikes[c.id];
-                  const toggleLike = () =>
+                  const toggleLike = () => {
                     setCommentLikes((prev) => ({ ...prev, [c.id]: !prev[c.id] }));
+                    setCommentLikeCounts((prev) => ({ ...prev, [c.id]: Math.max(0, (prev[c.id] ?? 0) + (liked ? -1 : 1)) }));
+                  };
                   return (
                     <div key={c.id} className="flex gap-3 rounded-xl bg-[var(--bg-surface-hover)] p-3 text-xs text-[var(--text-primary)]">
                       <Link
@@ -315,7 +345,7 @@ export default function HubPage({ params }: HubPageProps) {
                             <ThumbsUp className={`h-3.5 w-3.5 ${liked ? 'fill-[var(--action)] text-[var(--action)]' : ''}`} />
                             <span>{liked ? 'Curtido' : 'Curtir'}</span>
                           </motion.button>
-                          {liked && <span className="text-[var(--action)]">+1</span>}
+                          <span className="text-[10px] text-[var(--text-secondary)]">{commentLikeCounts[c.id] ?? 0}</span>
                           <button
                             onClick={() => handleReportComment(c.id)}
                             className="ml-auto text-[11px] text-[var(--text-secondary)] transition hover:text-[var(--action-hover)]"

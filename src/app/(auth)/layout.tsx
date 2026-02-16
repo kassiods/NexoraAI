@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               <span>Nexora</span>
             </div>
             <h1 className="text-3xl font-semibold leading-tight text-[var(--text-primary)]">Conecte, valide e evolua suas ideias.</h1>
-            <p className="mt-4 text-base text-[var(--text-secondary)]">
+            <p className="mt-4 text-base text-white/90">
               Comunidade focada em hubs de conhecimento, feedback rápido e networking qualificado.
             </p>
             <div className="mt-8 flex flex-wrap gap-3 text-sm text-[var(--text-primary)]">

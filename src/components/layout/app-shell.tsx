@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { usePathname } from 'next/navigation';
-import { ReactNode, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { Bell, Compass, Home, Menu, UserRound, X } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -63,12 +63,21 @@ function MobileNav({ items, current }: { items: NavItem[]; current: string }) {
 
 function SidebarFooter({ user }: { user: ReturnType<typeof useAuth>['user'] }) {
   const username = useMemo(() => user?.username ?? user?.email ?? 'convidado', [user]);
+  const avatarUrl = user?.photoURL ?? null;
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-surface)] p-4">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--action)] text-sm font-semibold text-black ring-1 ring-[color:rgba(255,255,255,0.08)]">
-          {(user?.displayName ?? username).slice(0, 2).toUpperCase()}
-        </div>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={user?.displayName ?? username ?? 'Avatar'}
+            className="h-10 w-10 rounded-lg object-cover ring-1 ring-[color:rgba(255,255,255,0.08)]"
+          />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--action)] text-sm font-semibold text-black ring-1 ring-[color:rgba(255,255,255,0.08)]">
+            {(user?.displayName ?? username).slice(0, 2).toUpperCase()}
+          </div>
+        )}
         <div className="flex-1">
           <p className="text-sm font-semibold leading-tight text-[var(--text-primary)]">{user?.displayName ?? 'Explorador Nexora'}</p>
           <p className="text-xs text-[var(--text-secondary)]">@{username}</p>
@@ -80,7 +89,8 @@ function SidebarFooter({ user }: { user: ReturnType<typeof useAuth>['user'] }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const { user, loading, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navItems: NavItem[] = useMemo(() => {
     const base: NavItem[] = [
@@ -94,6 +104,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
     return base;
   }, [user?.role]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace('/auth/login');
+    }
+  }, [loading, router, user]);
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">

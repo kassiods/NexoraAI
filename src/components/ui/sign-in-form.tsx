@@ -53,7 +53,7 @@ export function SignInForm() {
       </div>
       <div className="space-y-1 text-sm" role="status" aria-live="polite">
         {error && <p className="text-red-400">{error}</p>}
-        {!error && <p className="text-[var(--text-secondary)]">Use um e-mail mock para testar o fluxo.</p>}
+        {!error && <p className="text-[var(--text-secondary)]">Use seu e-mail cadastrado. Senha mínima de 6 caracteres.</p>}
       </div>
       <button
         type="submit"

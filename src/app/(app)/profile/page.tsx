@@ -7,6 +7,7 @@ import { useRequireProfile } from '@/hooks/use-require-profile';
 import { hubService } from '@/services/hub-service';
 import { userService } from '@/services/user-service';
 import type { Hub } from '@/types/hub';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 function LaptopIcon() {
   return (
@@ -72,6 +73,7 @@ export default function ProfilePage() {
   const [areas, setAreas] = useState<string[]>([]);
   const [areaInput, setAreaInput] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const router = useRouter();
@@ -140,6 +142,7 @@ export default function ProfilePage() {
       setFeedback(`Imagem muito grande (>${maxSizeMb}MB).`);
       return;
     }
+    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       setPhotoPreview(typeof reader.result === 'string' ? reader.result : null);
@@ -170,17 +173,44 @@ export default function ProfilePage() {
     if (!hasChanges) return;
     setSaving(true);
     setFeedback(null);
-    await userService.updateProfile({
-      ...user,
-      displayName: displayName.trim(),
-      bio: bio.trim(),
-      area: areas[0] ?? '',
-      areas,
-      photoURL: photoPreview ?? null
-    });
-    setFeedback('Perfil salvo (mock).');
-    router.refresh();
-    setSaving(false);
+    let uploadedUrl: string | null = null;
+    try {
+      if (photoFile) {
+        const supabase = getSupabaseClient();
+        if (!supabase) throw new Error('Supabase não configurado');
+        const ext = (photoFile.name.split('.').pop() || 'jpg').toLowerCase();
+        const path = `${user.uid}/avatar.${ext}`;
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(path, photoFile, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: photoFile.type || 'image/jpeg'
+        });
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+        uploadedUrl = data.publicUrl;
+      }
+
+      const updated = await userService.updateProfile({
+        ...user,
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        area: areas[0] ?? '',
+        areas,
+        photoURL: uploadedUrl ?? photoPreview ?? null
+      });
+      setFeedback('Perfil salvo.');
+      // Re-hidrata campos locais com o que veio do backend (evita sensação de não salvar)
+      setDisplayName(updated.displayName ?? '');
+      setBio(updated.bio ?? '');
+      setPhotoPreview(updated.photoURL ?? uploadedUrl ?? photoPreview ?? null);
+      setPhotoFile(null);
+    } catch (err: any) {
+      console.error('Erro ao salvar perfil', err);
+      const msg = err?.message || err?.error_description || 'Erro ao salvar perfil. Tente novamente.';
+      setFeedback(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <p className="text-sm text-[var(--text-secondary)]">Carregando...</p>;
