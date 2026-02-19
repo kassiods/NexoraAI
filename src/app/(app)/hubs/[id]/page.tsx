@@ -8,10 +8,11 @@ import type { Route } from 'next';
 import { hubService } from '@/services/hub-service';
 import { postService } from '@/services/post-service';
 import { moderationService } from '@/services/moderation-service';
+import { userService } from '@/services/user-service';
 import { useAuth } from '@/hooks/use-auth';
-import { mockUsers } from '@/data/mock/users';
 import type { Hub } from '@/types/hub';
 import type { Post, Comment } from '@/types/post';
+import type { UserProfile } from '@/types/user';
 import { ReportModal } from '@/components/ui/report-modal';
 
 type HubPageProps = { params: { id: string } };
@@ -32,6 +33,7 @@ export default function HubPage({ params }: HubPageProps) {
   const [reportTarget, setReportTarget] = useState<{ id: string; type: 'post' | 'comment'; label: string } | null>(null);
   const [reporting, setReporting] = useState(false);
   const [reportNotice, setReportNotice] = useState<string | null>(null);
+  const [authors, setAuthors] = useState<Record<string, UserProfile | null>>({});
 
   const formatRelativeTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -47,7 +49,7 @@ export default function HubPage({ params }: HubPageProps) {
   };
 
   const resolveUser = (uid: string) => {
-    const profile = mockUsers[uid];
+    const profile = authors[uid];
     if (!profile) {
       return {
         name: uid,
@@ -67,12 +69,14 @@ export default function HubPage({ params }: HubPageProps) {
     postService.listByHub(id).then((data) => {
       setPosts(data.posts);
       setComments(data.comments);
-      // seed comment like counters with zero for consistency
       const initialCounts: Record<string, number> = {};
+      const initialCommentLikes: Record<string, boolean> = {};
       data.comments.forEach((c) => {
-        initialCounts[c.id] = initialCounts[c.id] ?? 0;
+        initialCounts[c.id] = c.likes?.length ?? 0;
+        initialCommentLikes[c.id] = !!c.likes?.includes(user?.uid ?? '');
       });
       setCommentLikeCounts(initialCounts);
+      setCommentLikes(initialCommentLikes);
       const initialPostLikes: Record<string, boolean> = {};
       data.posts.forEach((p) => {
         initialPostLikes[p.id] = !!p.likes?.includes(user?.uid ?? '');
@@ -80,6 +84,19 @@ export default function HubPage({ params }: HubPageProps) {
       setPostLikes(initialPostLikes);
     });
   }, [id, user?.uid]);
+
+  useEffect(() => {
+    const uniqueIds = Array.from(new Set([...posts.map((p) => p.authorId), ...comments.map((c) => c.authorId)]));
+    if (uniqueIds.length === 0) return;
+    (async () => {
+      const entries = await Promise.all(uniqueIds.map(async (uid) => [uid, await userService.getById(uid)] as const));
+      const map: Record<string, UserProfile | null> = {};
+      entries.forEach(([uid, profile]) => {
+        map[uid] = profile;
+      });
+      setAuthors(map);
+    })();
+  }, [posts, comments]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,18 +208,15 @@ export default function HubPage({ params }: HubPageProps) {
           const profileHref = `/profile/${author.username.replace('@', '')}` as unknown as Route;
           const likedPost = !!postLikes[post.id];
           const likeCount = post.likes?.length ?? 0;
-          const togglePostLike = () => {
+          const togglePostLike = async () => {
             if (!user) return;
-            setPostLikes((prev) => ({ ...prev, [post.id]: !prev[post.id] }));
-            setPosts((prev) =>
-              prev.map((p) => {
-                if (p.id !== post.id) return p;
-                const current = p.likes ?? [];
-                const already = current.includes(user.uid);
-                const nextLikes = already ? current.filter((uid) => uid !== user.uid) : [...current, user.uid];
-                return { ...p, likes: nextLikes };
-              })
-            );
+            try {
+              const updated = await postService.togglePostLike(post.id, user.uid);
+              setPosts((prev) => prev.map((p) => (p.id === post.id ? updated : p)));
+              setPostLikes((prev) => ({ ...prev, [post.id]: updated.likes.includes(user.uid) }));
+            } catch (err) {
+              console.error('Erro ao curtir post', err);
+            }
           };
           return (
             <article
@@ -303,9 +317,16 @@ export default function HubPage({ params }: HubPageProps) {
                   const commentAuthor = resolveUser(c.authorId);
                   const commentProfileHref = `/profile/${commentAuthor.username.replace('@', '')}` as unknown as Route;
                   const liked = !!commentLikes[c.id];
-                  const toggleLike = () => {
-                    setCommentLikes((prev) => ({ ...prev, [c.id]: !prev[c.id] }));
-                    setCommentLikeCounts((prev) => ({ ...prev, [c.id]: Math.max(0, (prev[c.id] ?? 0) + (liked ? -1 : 1)) }));
+                  const toggleLike = async () => {
+                    if (!user) return;
+                    try {
+                      const updated = await postService.toggleCommentLike(c.id, user.uid);
+                      setCommentLikes((prev) => ({ ...prev, [c.id]: updated.likes?.includes(user.uid) ?? false }));
+                      setCommentLikeCounts((prev) => ({ ...prev, [c.id]: updated.likes?.length ?? 0 }));
+                      setComments((prev) => prev.map((item) => (item.id === c.id ? updated : item)));
+                    } catch (err) {
+                      console.error('Erro ao curtir comentário', err);
+                    }
                   };
                   return (
                     <div key={c.id} className="flex gap-3 rounded-xl bg-[var(--bg-surface-hover)] p-3 text-xs text-[var(--text-primary)]">

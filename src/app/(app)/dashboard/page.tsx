@@ -39,9 +39,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    const hubIds = user.hubs ?? [];
+    const hubIds = userHubs.map((h) => h.id);
+    if (hubIds.length === 0) {
+      setFeed([]);
+      return;
+    }
     postService.listFeedForUser(hubIds).then(setFeed);
-  }, [user]);
+  }, [user, userHubs]);
 
   useEffect(() => {
     const loadAuthors = async () => {
@@ -109,18 +113,15 @@ export default function DashboardPage() {
     setTimeout(() => setComposerNotice(null), 2600);
   };
 
-  const handleLike = (postId: string) => {
+  const handleLike = async (postId: string) => {
     if (!user) return;
-    setFeed((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
-        const current = p.likes ?? [];
-        const already = current.includes(user.uid);
-        const nextLikes = already ? current.filter((id) => id !== user.uid) : [...current, user.uid];
-        return { ...p, likes: nextLikes };
-      })
-    );
-    setLiked((prev) => ({ ...prev, [postId]: !prev[postId] }));
+    try {
+      const updated = await postService.togglePostLike(postId, user.uid);
+      setFeed((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+      setLiked((prev) => ({ ...prev, [postId]: updated.likes.includes(user.uid) }));
+    } catch (err) {
+      console.error('Erro ao atualizar like', err);
+    }
   };
 
   const handleReport = async (postId: string) => {

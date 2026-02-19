@@ -6,8 +6,6 @@ import type { UserProfile } from '@/types/user';
 const LS_KEY = 'nexora_mock_user';
 const LS_USERS_KEY = 'nexora_mock_users';
 
-const supabase = getSupabaseClient();
-
 type ProfileRow = {
   id: string;
   username: string | null;
@@ -32,6 +30,11 @@ const loadUid = () => {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem(LS_KEY);
 };
+
+// Caches em memória para evitar chamadas repetidas
+let currentUserCache: UserProfile | null = null;
+let currentUserPromise: Promise<UserProfile | null> | null = null;
+const userCache = new Map<string, UserProfile | null>();
 
 const loadUsers = (): Record<string, UserProfile> => {
   if (typeof window === 'undefined') return baseMockUsers;
@@ -69,33 +72,50 @@ const mapProfile = (user: User | null, profile?: ProfileRow | null): UserProfile
 
 export const userService = {
   async getCurrentUser(): Promise<UserProfile | null> {
-    if (!supabase) {
-      const users = loadUsers();
-      const uid = loadUid();
-      if (!uid) return null;
-      return users[uid] ?? null;
-    }
-    try {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      const authed = data.user;
-      if (!authed) return null;
+    if (currentUserCache) return currentUserCache;
+    if (currentUserPromise) return currentUserPromise;
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authed.id)
-        .maybeSingle();
+    currentUserPromise = (async () => {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        const users = loadUsers();
+        const uid = loadUid();
+        if (!uid) return null;
+        const u = users[uid] ?? null;
+        currentUserCache = u;
+        if (u) userCache.set(u.uid, u);
+        return u;
+      }
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        const authed = data.user;
+        if (!authed) return null;
 
-      if (profileError && profileError.code !== 'PGRST116') throw profileError;
-      return mapProfile(authed, profile);
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return null; // ignora abortos de navegação/hot reload
-      throw err;
-    }
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authed.id)
+          .maybeSingle();
+
+        if (profileError && profileError.code !== 'PGRST116') throw profileError;
+        const mapped = mapProfile(authed, profile);
+        currentUserCache = mapped;
+        if (mapped) userCache.set(mapped.uid, mapped);
+        return mapped;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return null; // ignora abortos de navegação/hot reload
+        throw err;
+      } finally {
+        currentUserPromise = null;
+      }
+    })();
+
+    return currentUserPromise;
   },
 
   async signIn(email: string, _password: string): Promise<UserProfile> {
+    const supabase = getSupabaseClient();
     if (!supabase) {
       const users = loadUsers();
       const found = Object.values(users).find((u) => u.email.toLowerCase() === email.toLowerCase());
@@ -113,10 +133,14 @@ export const userService = {
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: _password });
     if (error) throw error;
-    return mapProfile(data.user, null)!;
+    const mapped = mapProfile(data.user, null)!;
+    currentUserCache = mapped;
+    userCache.set(mapped.uid, mapped);
+    return mapped;
   },
 
   async signUp(email: string, _password: string, redirectTo?: string): Promise<UserProfile> {
+    const supabase = getSupabaseClient();
     if (!supabase) {
       return this.signIn(email, _password);
     }
@@ -141,24 +165,38 @@ export const userService = {
       });
     }
 
-    return mapProfile(user, null)!;
+    const mapped = mapProfile(user, null)!;
+    currentUserCache = mapped;
+    userCache.set(mapped.uid, mapped);
+    return mapped;
   },
 
   async signOut() {
+    const supabase = getSupabaseClient();
     if (!supabase) {
       persistUid(null);
+      currentUserCache = null;
+      currentUserPromise = null;
+      userCache.clear();
       return;
     }
     await supabase.auth.signOut();
+    currentUserCache = null;
+    currentUserPromise = null;
+    userCache.clear();
   },
 
   async updateProfile(profile: UserProfile) {
+    const supabase = getSupabaseClient();
     if (!supabase) {
       const users = loadUsers();
       users[profile.uid] = { ...users[profile.uid], ...profile };
       saveUsers(users);
       persistUid(profile.uid);
-      return users[profile.uid];
+      const merged = users[profile.uid];
+      currentUserCache = merged;
+      userCache.set(profile.uid, merged);
+      return merged;
     }
 
     const payload = {
@@ -178,7 +216,7 @@ export const userService = {
     const { data, error } = await supabase.from('profiles').upsert(payload).select().maybeSingle();
     if (error) throw error;
 
-    return {
+    const merged = {
       uid: profile.uid,
       email: profile.email,
       username: data?.username ?? profile.username ?? null,
@@ -191,19 +229,28 @@ export const userService = {
       links: (data?.links as UserProfile['links']) ?? profile.links,
       hubs: (data?.hubs as string[] | null) ?? profile.hubs
     } satisfies UserProfile;
+
+    currentUserCache = merged;
+    userCache.set(profile.uid, merged);
+    return merged;
   },
 
   async getById(uid: string) {
+    if (userCache.has(uid)) return userCache.get(uid) ?? null;
+
+    const supabase = getSupabaseClient();
     if (!supabase) {
       const users = loadUsers();
-      return users[uid] ?? null;
+      const u = users[uid] ?? null;
+      if (u) userCache.set(uid, u);
+      return u;
     }
 
     const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
     if (error) throw error;
     if (!data) return null;
 
-    return {
+    const mapped = {
       uid: data.id,
       email: data.email ?? '',
       username: data.username ?? null,
@@ -216,5 +263,8 @@ export const userService = {
       links: (data.links as UserProfile['links']) ?? undefined,
       hubs: data.hubs ?? undefined
     } satisfies UserProfile;
+
+    userCache.set(uid, mapped);
+    return mapped;
   }
 };

@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { hubService } from '@/services/hub-service';
-import { mockUsers } from '@/data/mock/users';
+import { userService } from '@/services/user-service';
 import type { HubRequest } from '@/types/hub';
+import type { UserProfile } from '@/types/user';
 import { useAuth } from '@/hooks/use-auth';
 
 function formatRelativeTime(timestamp: number) {
@@ -22,9 +23,19 @@ export default function AdminHubsPage() {
   const { user, loading } = useAuth();
   const [requests, setRequests] = useState<HubRequest[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [authors, setAuthors] = useState<Record<string, UserProfile | null>>({});
 
   useEffect(() => {
-    hubService.listHubRequests().then(setRequests);
+    hubService.listHubRequests().then(async (data) => {
+      setRequests(data);
+      const ids = Array.from(new Set(data.map((r) => r.requesterId))).filter(Boolean);
+      const entries = await Promise.all(ids.map(async (id) => [id, await userService.getById(id)] as const));
+      const map: Record<string, UserProfile | null> = {};
+      entries.forEach(([id, profile]) => {
+        map[id] = profile;
+      });
+      setAuthors(map);
+    });
   }, []);
 
   const sorted = useMemo(() => requests.slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)), [requests]);
@@ -33,9 +44,15 @@ export default function AdminHubsPage() {
     const confirmText = status === 'approved' ? 'Aprovar este hub?' : 'Rejeitar este hub?';
     if (!window.confirm(confirmText)) return;
     const reason = status === 'rejected' ? window.prompt('Motivo (opcional):') ?? undefined : undefined;
-    await hubService.updateRequestStatus(id, status, reason);
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-    setFeedback(status === 'approved' ? 'Hub aprovado e publicado (mock).' : 'Solicitação rejeitada (mock).');
+    try {
+      await hubService.updateRequestStatus(id, status, reason);
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+      setFeedback(status === 'approved' ? 'Hub aprovado.' : 'Solicitação rejeitada.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar solicitação.';
+      setFeedback(message);
+      console.error('Erro ao atualizar solicitação de hub', err);
+    }
   };
 
   if (loading) return <p className="text-sm text-[var(--text-secondary)]">Carregando...</p>;
@@ -59,7 +76,7 @@ export default function AdminHubsPage() {
         )}
 
         {sorted.map((req) => {
-          const requester = mockUsers[req.requesterId] ?? { displayName: req.requesterId, username: `@${req.requesterId}` };
+          const requester = authors[req.requesterId] ?? { displayName: req.requesterId, username: `@${req.requesterId}` };
           return (
             <div
               key={req.id}

@@ -15,7 +15,7 @@ export function HubMiniCard({ hub }: { hub: Hub }) {
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--text-secondary)]">{hub.category}</p>
           <p className="text-base font-semibold text-[var(--text-primary)]">{hub.name}</p>
-          <p className="text-xs text-[var(--text-secondary)]">{hub.members.length} membros</p>
+          <p className="text-xs text-[var(--text-secondary)]">{hub.members?.length ?? 0} membros</p>
         </div>
         <Link href={`/hubs/${hub.id}`} className="text-xs font-semibold text-[var(--action)] hover:text-[var(--action-hover)]">
           Ver

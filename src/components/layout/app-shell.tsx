@@ -90,7 +90,7 @@ function SidebarFooter({ user }: { user: ReturnType<typeof useAuth>['user'] }) {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, hasSession } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navItems: NavItem[] = useMemo(() => {
     const base: NavItem[] = [
@@ -105,15 +105,28 @@ export function AppShell({ children }: { children: ReactNode }) {
     return base;
   }, [user?.role]);
 
-  useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      router.replace('/auth/login');
-    }
-  }, [loading, router, user]);
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-base)] text-sm text-[var(--text-secondary)]">
+        Carregando sessão...
+      </div>
+    );
+  }
+
+  if (!hasSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-base)] text-sm text-[var(--text-secondary)]">
+        Redirecionando para login...
+      </div>
+    );
+  }
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-base)] text-sm text-[var(--text-secondary)]">
+        Carregando perfil...
+      </div>
+    );
   }
 
   return (

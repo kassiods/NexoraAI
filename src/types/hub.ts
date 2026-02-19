@@ -7,7 +7,8 @@ export type Hub = {
   status?: 'open' | 'request';
   rules?: string[];
   adminId: string;
-  members: string[];
+  members?: string[];
+  createdAt?: number;
 };
 
 export type HubRequest = {
@@ -18,5 +19,6 @@ export type HubRequest = {
   objective?: string;
   requesterId: string;
   status: 'pending' | 'approved' | 'rejected';
+  feedback?: string | null;
   createdAt?: number;
 };

@@ -34,13 +34,19 @@ export default function NewHubRequestPage() {
   const onSubmit = async (data: FormValues) => {
     setError(null);
     setLoading(true);
+    if (!user) {
+      setError('Faça login para enviar uma solicitação.');
+      setLoading(false);
+      return;
+    }
     try {
-      await hubService.requestHub({ ...data, requesterId: user?.uid ?? 'mock-user' });
+      await hubService.requestHub({ ...data, requesterId: user.uid });
       setSent(true);
       reset();
     } catch (err) {
-      setError('Não foi possível enviar agora. Tente novamente em instantes.');
-      console.error(err);
+      const message = err instanceof Error ? err.message : 'Não foi possível enviar agora. Tente novamente em instantes.';
+      setError(message);
+      console.error('Erro ao solicitar hub', err);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 export type Report = {
   id: string;
   targetId: string;
-  targetType: 'post' | 'comment' | 'user';
+  targetType: 'post' | 'comment' | 'user' | 'hub';
   reason: string;
   reporterId: string;
   reportedUserId?: string;
