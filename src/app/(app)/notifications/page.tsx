@@ -4,10 +4,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { notificationService } from '@/services/notification-service';
 import { useRequireProfile } from '@/hooks/use-require-profile';
 import type { NotificationItem } from '@/types/notification';
+import { hubService } from '@/services/hub-service';
+import { userService } from '@/services/user-service';
+import type { HubJoinRequest } from '@/types/hub';
 
 export default function NotificationsPage() {
   const { user, loading } = useRequireProfile();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [requests, setRequests] = useState<HubJoinRequest[]>([]);
+  const [requesters, setRequesters] = useState<Record<string, ReturnType<typeof userService.getById> extends Promise<infer R> ? R : never>>({});
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -17,6 +25,68 @@ export default function NotificationsPage() {
   const markAsRead = async (id: string) => {
     await notificationService.markAsRead(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+
+  const loadRequesters = async (list: HubJoinRequest[]) => {
+    const ids = Array.from(new Set(list.map((r) => r.userId)));
+    const entries = await Promise.all(ids.map(async (uid) => [uid, await userService.getById(uid)] as const));
+    const map: Record<string, any> = {};
+    entries.forEach(([uid, profile]) => {
+      map[uid] = profile;
+    });
+    setRequesters(map);
+  };
+
+  const openJoinRequestModal = async (notif: NotificationItem) => {
+    if (!user) return;
+    setModalOpen(true);
+    setModalLoading(true);
+    setRequests([]);
+    setRequesters({});
+
+    let hubId: string | null = null;
+    let hubName: string | null = null;
+    try {
+      const parsed = JSON.parse(notif.description ?? '{}');
+      hubId = parsed.hubId ?? null;
+      hubName = parsed.hubName ?? null;
+    } catch (_err) {
+      // fallback: description is plain text
+    }
+
+    setModalTitle(hubName ? `Pedidos para ${hubName}` : 'Pedidos para participar');
+
+    try {
+      let pending: HubJoinRequest[] = [];
+      if (hubId) {
+        pending = (await hubService.listJoinRequestsForHub(hubId)).filter((r) => r.status === 'pending');
+      } else {
+        // fallback: carrega todos hubs onde o user é admin e agrupa pedidos pendentes
+        const hubs = await hubService.listHubs();
+        const ownHubs = hubs.filter((h) => h.adminId === user.uid);
+        const results = await Promise.all(ownHubs.map((h) => hubService.listJoinRequestsForHub(h.id)));
+        pending = results.flat().filter((r) => r.status === 'pending');
+      }
+      setRequests(pending);
+      await loadRequesters(pending);
+    } catch (err) {
+      console.error('Erro ao carregar pedidos do hub', err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleDecision = async (reqId: string, status: Exclude<HubJoinRequest['status'], 'pending'>) => {
+    if (!user) return;
+    setModalLoading(true);
+    try {
+      await hubService.respondToJoinRequest(reqId, status, user.uid);
+      setRequests((prev) => prev.filter((r) => r.id !== reqId));
+    } catch (err) {
+      console.error('Erro ao responder pedido', err);
+    } finally {
+      setModalLoading(false);
+    }
   };
 
   const markAll = async () => {
@@ -110,10 +180,14 @@ export default function NotificationsPage() {
                   {group.items.map((n) => {
                     const isUnread = !n.read;
                     const typeBadge = n.type === 'comment' ? 'C' : n.type === 'invite' ? 'I' : n.type === 'reply' ? 'R' : 'U';
+                    const isJoin = n.type === 'hub-join-request';
                     return (
                       <div
                         key={n.id}
-                        onClick={() => markAsRead(n.id)}
+                        onClick={() => {
+                          markAsRead(n.id);
+                          if (isJoin) openJoinRequestModal(n);
+                        }}
                         className={`cursor-pointer rounded-2xl border border-[var(--border)] px-4 py-4 transition ${
                           isUnread ? 'bg-[var(--bg-surface-hover)]' : 'bg-[var(--bg-surface)] opacity-90'
                         }`}
@@ -137,6 +211,7 @@ export default function NotificationsPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 markAsRead(n.id);
+                                if (isJoin) openJoinRequestModal(n);
                               }}
                               className="rounded-lg border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-surface-hover)]"
                             >
@@ -155,6 +230,64 @@ export default function NotificationsPage() {
       )}
 
       <p className="text-xs text-[var(--text-secondary)]">Sua atividade na comunidade será refletida aqui.</p>
+
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-lg font-semibold text-[var(--text-primary)]">{modalTitle || 'Pedidos para participar'}</p>
+                <p className="text-xs text-[var(--text-secondary)]">Aceite ou rejeite solicitações pendentes.</p>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="text-sm text-[var(--text-secondary)] transition hover:text-[var(--action-hover)]"
+              >
+                Fechar
+              </button>
+            </div>
+
+            {modalLoading && <p className="mt-4 text-sm text-[var(--text-secondary)]">Carregando pedidos...</p>}
+
+            {!modalLoading && requests.length === 0 && (
+              <p className="mt-4 text-sm text-[var(--text-secondary)]">Nenhum pedido pendente.</p>
+            )}
+
+            {!modalLoading && requests.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {requests.map((req) => {
+                  const requester = requesters[req.userId];
+                  const fallback = `${req.userId.slice(0, 6)}…`;
+                  const label = requester?.displayName || requester?.username || requester?.email || fallback;
+                  const username = requester?.username || requester?.email || fallback;
+                  return (
+                    <div key={req.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface-hover)] px-3 py-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+                        <p className="text-xs text-[var(--text-secondary)]">{username}</p>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        <button
+                          onClick={() => handleDecision(req.id, 'approved')}
+                          className="rounded-lg border border-[var(--border)] px-3 py-2 transition hover:bg-[var(--bg-surface)]"
+                        >
+                          Aceitar
+                        </button>
+                        <button
+                          onClick={() => handleDecision(req.id, 'rejected')}
+                          className="rounded-lg border border-[var(--border)] px-3 py-2 transition hover:bg-[var(--bg-surface)]"
+                        >
+                          Recusar
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

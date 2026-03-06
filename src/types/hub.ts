@@ -22,3 +22,11 @@ export type HubRequest = {
   feedback?: string | null;
   createdAt?: number;
 };
+
+export type HubJoinRequest = {
+  id: string;
+  hubId: string;
+  userId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt?: number;
+};

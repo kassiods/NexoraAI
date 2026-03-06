@@ -114,6 +114,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   if (!hasSession) {
+    // Redireciona para login quando não há sessão
+    router.replace('/auth/login');
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg-base)] text-sm text-[var(--text-secondary)]">
         Redirecionando para login...
@@ -157,7 +159,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
             {user && (
               <button
-                onClick={signOut}
+                onClick={async () => {
+                  await signOut();
+                  router.replace('/auth/login');
+                }}
                 className="btn btn-secondary w-full justify-start px-3 py-2"
               >
                 Sair

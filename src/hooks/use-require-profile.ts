@@ -12,8 +12,10 @@ export function useRequireProfile() {
       router.replace('/auth/login');
       return;
     }
-    if (!user) return; // ainda carregando perfil, mas sessão existe
-    if (!user.username || !user.displayName) {
+    if (!user) return; // ainda carregando perfil
+    // Só redireciona para completar perfil se faltarem ambos os campos de identidade
+    const needsProfile = !user.username && !user.displayName;
+    if (needsProfile) {
       router.replace('/auth/complete-profile');
     }
   }, [loading, hasSession, router, user]);

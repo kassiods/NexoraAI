@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '@/lib/supabase-client';
-import type { Hub, HubRequest } from '@/types/hub';
+import type { Hub, HubJoinRequest, HubRequest } from '@/types/hub';
 import { mockHubs } from '@/data/mock/hubs';
 
 const genId = () => {
@@ -32,25 +32,49 @@ const mapRequest = (row: any): HubRequest => ({
   createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined
 });
 
+const mapJoinRequest = (row: any): HubJoinRequest => ({
+  id: row.id,
+  hubId: row.hub_id,
+  userId: row.user_id,
+  status: row.status ?? 'pending',
+  createdAt: row.created_at ? new Date(row.created_at).getTime() : undefined
+});
+
+const sendNotification = async (
+  supabase: ReturnType<typeof getSupabaseClient>,
+  userId: string | null | undefined,
+  kind: 'hub-join-request' | 'hub-join-response',
+  title: string,
+  body: string
+) => {
+  if (!supabase || !userId) return;
+  await supabase.from('notifications').insert({ user_id: userId, kind, title, body, read: false });
+};
+
 export const hubService = {
   async listHubs(): Promise<Hub[]> {
     const supabase = getSupabaseClient();
     if (!supabase) return mockHubs;
+    try {
+      const { data, error } = await supabase.from('hubs').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
 
-    const { data, error } = await supabase.from('hubs').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
+      // Fetch members map
+      const { data: memberships, error: memberError } = await supabase.from('hub_members').select('hub_id, user_id');
+      // Se RLS não permitir, continua sem membros para não quebrar a listagem
+      const safeMemberships = memberError ? [] : memberships;
+      const membersByHub = new Map<string, string[]>();
+      safeMemberships?.forEach((m) => {
+        const list = membersByHub.get(m.hub_id) ?? [];
+        list.push(m.user_id);
+        membersByHub.set(m.hub_id, list);
+      });
 
-    // Fetch members map
-    const { data: memberships, error: memberError } = await supabase.from('hub_members').select('hub_id, user_id');
-    if (memberError) throw memberError;
-    const membersByHub = new Map<string, string[]>();
-    memberships?.forEach((m) => {
-      const list = membersByHub.get(m.hub_id) ?? [];
-      list.push(m.user_id);
-      membersByHub.set(m.hub_id, list);
-    });
-
-    return (data ?? []).map((h) => mapHub(h, membersByHub.get(h.id)));
+      return (data ?? []).map((h) => mapHub(h, membersByHub.get(h.id)));
+    } catch (err) {
+      console.error('Falha ao listar hubs, usando mock', err);
+      return mockHubs;
+    }
   },
 
   async listHubRequests(): Promise<HubRequest[]> {
@@ -80,8 +104,8 @@ export const hubService = {
     if (error) throw error;
     if (!data) return null;
     const { data: memberships, error: memberError } = await supabase.from('hub_members').select('user_id').eq('hub_id', id);
-    if (memberError) throw memberError;
-    const members = memberships?.map((m) => m.user_id) ?? [];
+    // Se não puder ler membros por RLS, segue sem bloquear o hub
+    const members = memberError ? [] : memberships?.map((m) => m.user_id) ?? [];
     return mapHub(data, members);
   },
 
@@ -95,6 +119,142 @@ export const hubService = {
     const { data: hubs, error } = await supabase.from('hubs').select('*').in('id', hubIds);
     if (error) throw error;
     return (hubs ?? []).map((h) => mapHub(h, hubIds.includes(h.id) ? undefined : undefined));
+  },
+
+  async getJoinState(hubId: string, userId: string) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return { status: null as HubJoinRequest['status'] | null, attempts: 0, last: null as HubJoinRequest | null };
+
+    const { data, error } = await supabase
+      .from('hub_join_requests')
+      .select('*')
+      .eq('hub_id', hubId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const last = data?.[0] ? mapJoinRequest(data[0]) : null;
+    return { status: last?.status ?? null, attempts: data?.length ?? 0, last };
+  },
+
+  async requestMembership(hubId: string, userId: string): Promise<HubJoinRequest> {
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error('Supabase não configurado');
+
+    const { data: member } = await supabase
+      .from('hub_members')
+      .select('hub_id')
+      .eq('hub_id', hubId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (member) throw new Error('Você já participa deste hub.');
+
+    const { count: attempts } = await supabase
+      .from('hub_join_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('hub_id', hubId)
+      .eq('user_id', userId);
+    if ((attempts ?? 0) >= 3) throw new Error('Limite de 3 pedidos atingido para este hub.');
+
+    const { data: existingPending } = await supabase
+      .from('hub_join_requests')
+      .select('*')
+      .eq('hub_id', hubId)
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    if (existingPending) return mapJoinRequest(existingPending);
+
+    const { data: hubRow } = await supabase.from('hubs').select('admin_id, name').eq('id', hubId).maybeSingle();
+
+    const { data, error } = await supabase
+      .from('hub_join_requests')
+      .insert({ hub_id: hubId, user_id: userId, status: 'pending' })
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error('Falha ao registrar pedido.');
+
+    await sendNotification(
+      supabase,
+      hubRow?.admin_id,
+      'hub-join-request',
+      'Pedido para participar do hub',
+      JSON.stringify({
+        message: `Você recebeu um pedido para participar do hub ${hubRow?.name ?? ''}`,
+        hubId,
+        hubName: hubRow?.name ?? '',
+        requestId: data.id
+      })
+    );
+
+    return mapJoinRequest(data);
+  },
+
+  async listJoinRequestsForHub(hubId: string): Promise<HubJoinRequest[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('hub_join_requests')
+      .select('*')
+      .eq('hub_id', hubId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapJoinRequest);
+  },
+
+  async respondToJoinRequest(id: string, status: Exclude<HubJoinRequest['status'], 'pending'>, actorId: string) {
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error('Supabase não configurado');
+
+    const { data: requestRow, error: fetchError } = await supabase.from('hub_join_requests').select('*').eq('id', id).maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!requestRow) throw new Error('Pedido não encontrado');
+
+    const { data: hubRow, error: hubError } = await supabase.from('hubs').select('id, admin_id, name').eq('id', requestRow.hub_id).maybeSingle();
+    if (hubError) throw hubError;
+    if (!hubRow) throw new Error('Hub não encontrado');
+    if (hubRow.admin_id !== actorId) throw new Error('Apenas o dono do hub pode responder pedidos.');
+
+    const { data, error } = await supabase
+      .from('hub_join_requests')
+      .update({ status })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error('Não foi possível atualizar o pedido');
+
+    if (status === 'approved') {
+      await supabase
+        .from('hub_members')
+        .upsert({ hub_id: requestRow.hub_id, user_id: requestRow.user_id, role: 'member' }, { onConflict: 'hub_id,user_id' });
+
+      await sendNotification(
+        supabase,
+        requestRow.user_id,
+        'hub-join-response',
+        'Pedido aprovado',
+        JSON.stringify({
+          message: `Seu pedido para participar do hub ${hubRow.name ?? ''} foi aprovado.`,
+          hubId: hubRow.id,
+          hubName: hubRow.name ?? ''
+        })
+      );
+    } else {
+      await sendNotification(
+        supabase,
+        requestRow.user_id,
+        'hub-join-response',
+        'Pedido recusado',
+        JSON.stringify({
+          message: `Seu pedido para participar do hub ${hubRow.name ?? ''} foi recusado.`,
+          hubId: hubRow.id,
+          hubName: hubRow.name ?? ''
+        })
+      );
+    }
+
+    return mapJoinRequest(data);
   },
 
   async requestHub(data: Omit<HubRequest, 'id' | 'status' | 'feedback' | 'createdAt'>): Promise<HubRequest> {

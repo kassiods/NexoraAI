@@ -10,7 +10,7 @@ import { postService } from '@/services/post-service';
 import { moderationService } from '@/services/moderation-service';
 import { userService } from '@/services/user-service';
 import { useAuth } from '@/hooks/use-auth';
-import type { Hub } from '@/types/hub';
+import type { Hub, HubJoinRequest } from '@/types/hub';
 import type { Post, Comment } from '@/types/post';
 import type { UserProfile } from '@/types/user';
 import { ReportModal } from '@/components/ui/report-modal';
@@ -34,6 +34,9 @@ export default function HubPage({ params }: HubPageProps) {
   const [reporting, setReporting] = useState(false);
   const [reportNotice, setReportNotice] = useState<string | null>(null);
   const [authors, setAuthors] = useState<Record<string, UserProfile | null>>({});
+  const [joinState, setJoinState] = useState<{ status: HubJoinRequest['status'] | 'none'; attempts: number } | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<HubJoinRequest[]>([]);
+  const [requesters, setRequesters] = useState<Record<string, UserProfile | null>>({});
 
   const formatRelativeTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -66,7 +69,22 @@ export default function HubPage({ params }: HubPageProps) {
 
   useEffect(() => {
     hubService.getHub(id).then(setHub);
-    postService.listByHub(id).then((data) => {
+  }, [id]);
+
+  useEffect(() => {
+    if (!hub || !user) return;
+    if (hub.adminId === user.uid || hub.members?.includes(user.uid)) return;
+    hubService.getJoinState(hub.id, user.uid).then((state) => {
+      setJoinState({ status: state.status ?? 'none', attempts: state.attempts });
+    });
+  }, [hub, user]);
+
+  useEffect(() => {
+    if (!hub) return;
+    const canAccess = !!user && (hub.adminId === user.uid || hub.members?.includes(user.uid));
+    if (!canAccess) return;
+
+    postService.listByHub(hub.id).then((data) => {
       setPosts(data.posts);
       setComments(data.comments);
       const initialCounts: Record<string, number> = {};
@@ -83,7 +101,7 @@ export default function HubPage({ params }: HubPageProps) {
       });
       setPostLikes(initialPostLikes);
     });
-  }, [id, user?.uid]);
+  }, [hub, user]);
 
   useEffect(() => {
     const uniqueIds = Array.from(new Set([...posts.map((p) => p.authorId), ...comments.map((c) => c.authorId)]));
@@ -97,6 +115,24 @@ export default function HubPage({ params }: HubPageProps) {
       setAuthors(map);
     })();
   }, [posts, comments]);
+
+  useEffect(() => {
+    if (!hub || !user || hub.adminId !== user.uid) return;
+    hubService.listJoinRequestsForHub(hub.id).then((reqs) => setPendingRequests(reqs.filter((r) => r.status === 'pending')));
+  }, [hub, user]);
+
+  useEffect(() => {
+    const ids = Array.from(new Set(pendingRequests.map((r) => r.userId)));
+    if (ids.length === 0) return;
+    (async () => {
+      const entries = await Promise.all(ids.map(async (uid) => [uid, await userService.getById(uid)] as const));
+      const map: Record<string, UserProfile | null> = {};
+      entries.forEach(([uid, profile]) => {
+        map[uid] = profile;
+      });
+      setRequesters(map);
+    })();
+  }, [pendingRequests]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +190,71 @@ export default function HubPage({ params }: HubPageProps) {
     return <p className="text-sm text-[var(--text-secondary)]">Carregando hub...</p>;
   }
 
+  const isAdmin = !!user && hub.adminId === user.uid;
+  const isMember = !!user && (hub.members?.includes(user.uid) ?? false);
+  const canAccess = isAdmin || isMember;
+
+  const handleJoinRequest = async () => {
+    if (!user || !hub) return;
+    try {
+      const next = await hubService.requestMembership(hub.id, user.uid);
+      setJoinState({ status: next.status, attempts: (joinState?.attempts ?? 0) + 1 });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Não foi possível enviar o pedido.';
+      setReportNotice(message);
+      setTimeout(() => setReportNotice(null), 2400);
+    }
+  };
+
+  const handleJoinDecision = async (reqId: string, status: Exclude<HubJoinRequest['status'], 'pending'>) => {
+    if (!user || !hub) return;
+    try {
+      const updated = await hubService.respondToJoinRequest(reqId, status, user.uid);
+      setPendingRequests((prev) => prev.filter((r) => r.id !== reqId));
+      if (status === 'approved') {
+        setHub((prev) => (prev ? { ...prev, members: [...(prev.members ?? []), updated.userId] } : prev));
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao responder pedido';
+      setReportNotice(message);
+      setTimeout(() => setReportNotice(null), 2400);
+    }
+  };
+
+  if (!canAccess) {
+    const attempts = joinState?.attempts ?? 0;
+    const limitReached = attempts >= 3;
+    const pending = joinState?.status === 'pending';
+    const rejected = joinState?.status === 'rejected';
+
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Hub</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)]">{hub.name}</h1>
+          <p className="text-sm text-[var(--text-secondary)]">{hub.description}</p>
+        </div>
+
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-6 text-sm text-[var(--text-primary)]">
+          <p className="text-base font-semibold text-[var(--text-primary)]">Acesso restrito</p>
+          <p className="mt-1 text-[var(--text-secondary)]">Você precisa ser aceito para participar deste hub.</p>
+          {pending && <p className="mt-2 text-[var(--text-secondary)]">Pedido enviado. Aguarde a aprovação.</p>}
+          {rejected && !limitReached && <p className="mt-2 text-[var(--text-secondary)]">Seu último pedido foi recusado. Você ainda pode tentar novamente.</p>}
+          {limitReached && <p className="mt-2 text-[var(--text-secondary)]">Limite de 3 pedidos atingido para este hub.</p>}
+
+          <button
+            type="button"
+            className="btn btn-primary mt-4 px-4 py-2 text-sm disabled:opacity-60"
+            disabled={!user || pending || limitReached}
+            onClick={handleJoinRequest}
+          >
+            {pending ? 'Pedido enviado' : limitReached ? 'Limite atingido' : 'Pedir para participar'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
@@ -164,6 +265,47 @@ export default function HubPage({ params }: HubPageProps) {
       </div>
 
       {reportNotice && <p className="text-xs text-[var(--text-secondary)]">{reportNotice}</p>}
+
+      {isAdmin && pendingRequests.length > 0 && (
+        <div className="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-surface)] p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Pedidos para participar</p>
+              <p className="text-xs text-[var(--text-secondary)]">Aprove ou rejeite pessoas que solicitaram entrada.</p>
+            </div>
+            <span className="rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-secondary)]">{pendingRequests.length} pendente(s)</span>
+          </div>
+
+          <div className="space-y-2">
+            {pendingRequests.map((req) => {
+              const requester = requesters[req.userId];
+              const label = requester?.displayName || requester?.username || req.userId;
+              return (
+                <div key={req.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-surface-hover)] px-3 py-2 text-sm text-[var(--text-primary)]">
+                  <div className="flex-1">
+                    <p className="font-semibold text-[var(--text-primary)]">{label}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">Quer participar deste hub.</p>
+                  </div>
+                  <div className="flex gap-2 text-xs">
+                    <button
+                      onClick={() => handleJoinDecision(req.id, 'approved')}
+                      className="rounded-lg border border-[var(--border)] px-3 py-2 transition hover:bg-[var(--bg-surface)]"
+                    >
+                      Aceitar
+                    </button>
+                    <button
+                      onClick={() => handleJoinDecision(req.id, 'rejected')}
+                      className="rounded-lg border border-[var(--border)] px-3 py-2 transition hover:bg-[var(--bg-surface)]"
+                    >
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={handlePost}
